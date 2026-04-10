@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Finite Field Affine Lines Visualizer</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 </head>
 
 <body>
@@ -35,12 +36,6 @@
         </div>
 
         <div id="controls-3d" class="selection-rows controls-3d" style="display: none;">
-            <div class="selection-row">
-                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-color);">
-                    <input type="checkbox" id="show-number-check">
-                    <span>顯示數字 (Show Number)</span>
-                </label>
-            </div>
             <div class="selection-row axis-selection-row" style="gap: 12px; flex-wrap: wrap;">
                 <label style="color: var(--text-color); font-weight: 600;">3D 軸切片:</label>
                 <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
@@ -74,7 +69,18 @@
                 <div class="a-slider-label" id="b-slider-val">b = 01</div>
             </div>
 
-            <div class="equation-display" id="equation-display" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+            <div class="control-group">
+                <label>選擇顯示數值</label>
+                <div class="slider-container">
+                    <select id="value-select" class="num-input" style="padding: 6px; width: auto; min-width: 100px;">
+                        <option value="all">All</option>
+                    </select>
+                </div>
+                <div class="a-slider-label" id="value-select-label"></div>
+            </div>
+
+            <div class="equation-display" id="equation-display"
+                style="flex-direction: column; align-items: flex-start; gap: 8px;">
                 <div id="eq-display-2d">2D: y = 01 · x + c</div>
                 <div id="eq-display-3d">3D: z = 01 · x + 01 · y + c</div>
             </div>
@@ -89,13 +95,17 @@
         <div class="bottom-row">
             <div id="view-2d"
                 style="width: 100%; display: flex; flex-direction: row; align-items: stretch; justify-content: center; flex-wrap: wrap; gap: 24px;">
-                <div id="viz-2d" class="visualization" style="flex: 1; min-width: 350px; display: flex; align-items: center; justify-content: center;">
+                <div id="viz-2d" class="visualization"
+                    style="flex: 1; min-width: 350px; display: flex; align-items: center; justify-content: center;">
                     <svg id="draw-canvas" overflow="visible">
                     </svg>
                 </div>
 
-                <div class="visualization latin-square-container" style="flex: 1; min-width: 350px; justify-content: center; margin: 0; padding-top: 24px; padding-bottom: 24px;">
-                    <div class="latin-square-title" style="margin-bottom: 12px; font-size: 1.1em; color: var(--primary-color);">拉丁方陣 (2D: c = y - ax)</div>
+                <div class="visualization latin-square-container"
+                    style="flex: 1; min-width: 350px; justify-content: center; margin: 0; padding-top: 24px; padding-bottom: 24px;">
+                    <div class="latin-square-title"
+                        style="margin-bottom: 12px; font-size: 1.1em; color: var(--primary-color);">拉丁方陣 (2D: c = y -
+                        ax)</div>
                     <div class="latin-square" id="latin-square">
                     </div>
                 </div>
@@ -116,7 +126,23 @@
                     style="flex: 1; min-width: 350px; height: 500px; position: relative; padding-top: 40px;">
                     <div class="latin-square-title"
                         style="position: absolute; top: 15px; left: 0; width: 100%; text-align: center; z-index: 10; font-size: 1.1em; color: var(--primary-color);">
+                        3D 線圖填色版 (Curves)</div>
+                    <div id="viz-3d-plotly"
+                        style="width: 100%; height: 100%; border-radius: 8px; overflow: hidden; background: transparent;">
+                    </div>
+                </div>
+
+                <div class="visualization"
+                    style="flex: 1; min-width: 350px; height: 500px; position: relative; padding-top: 40px;">
+                    <div class="latin-square-title"
+                        style="position: absolute; top: 15px; left: 0; width: 100%; text-align: center; z-index: 10; font-size: 1.1em; color: var(--primary-color);">
                         3D 疊層平面 (Latin Square: z = ax + by + c)</div>
+                    <div class="three-toggle-overlay">
+                        <label>
+                            <input type="checkbox" id="show-number-check">
+                            <span>顯示數字</span>
+                        </label>
+                    </div>
                     <div id="viz-3d-latin"
                         style="width: 100%; height: 100%; cursor: grab; border-radius: 8px; overflow: hidden;"></div>
                 </div>

@@ -36,6 +36,11 @@ function createGFPrime(p) {
 }
 
 function createGF2k(q, k) {
+    // 不可約多項式 (含最高位):
+    // k=1: x+1 (11_2 = 3) for GF(2)
+    // k=2: x²+x+1 (111_2 = 7)
+    // k=3: x³+x+1 (1011_2 = 11)
+    // k=4: x⁴+x+1 (10011_2 = 19)
     const polys = { 1: 3, 2: 7, 3: 11, 4: 19 };
     const poly = polys[k];
 
@@ -64,7 +69,7 @@ function createGF2k(q, k) {
         p: 2,
         add: (a, b) => a ^ b,
         mul: mul,
-        label: (i) => i.toString(2).padStart(k, '0'),
+        label: (i) => formatAlphaLabel(intToBinaryCoeffs(i)),
         type: 'binary',
         desc: `擴張體 GF(2^${k}) = GF(${q})\n加法: 多項式 XOR (逐位元 XOR)\n乘法: 模不可約多項式算術`
     };
@@ -189,8 +194,12 @@ let kInput, pkPInput, runKBtn;
 let controls3d, showNumberCheck, view2d, view3d;
 let axisXSelect, axisYSelect, axisZSelect;
 let selectedAxisX = 'all', selectedAxisY = 'all', selectedAxisZ = 'all';
+let valueSelect, valueSelectLabel;
+let selectedValue = 'all';
+let latinTooltip = null;
 
-let scene3dLines, scene3dLatin; 
+let scene3dLines, scene3dLatin; // 3D 場景管理器執行個體
+
 
 class Visualizer3D {
     constructor(container) {
@@ -209,6 +218,7 @@ class Visualizer3D {
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         this.camera.position.set(12, 12, 12);
         this.controls.update();
+        this.lastQ = null;
 
         const light = new THREE.DirectionalLight(0xffffff, 3);
         light.position.set(5, 10, 7.5);
@@ -247,21 +257,34 @@ class Visualizer3D {
         }
     }
 
-    render(mode, field, showText, aVal, bVal, filters = { x: 'all', y: 'all', z: 'all' }) {
+    render(mode, field, showText, aVal, bVal, filters = { x: 'all', y: 'all', z: 'all', c: 'all' }) {
         this.clear();
         const q = field.q;
         const spacing = 1.6;
         const offset = (q - 1) * spacing / 2;
+
+        if (this.lastQ !== q) {
+            const distance = Math.max(12, q * spacing * 1.4);
+            this.camera.position.set(distance, distance, distance);
+            this.camera.updateProjectionMatrix();
+            this.controls.target.set(0, 0, 0);
+            this.controls.update();
+            this.lastQ = q;
+        }
 
         this.drawAxes(q, spacing, offset, field, mode);
 
         const xFilter = filters.x === 'all' ? null : Number(filters.x);
         const yFilter = filters.y === 'all' ? null : Number(filters.y);
         const zFilter = filters.z === 'all' ? null : Number(filters.z);
+        const cFilter = filters.c === 'all' ? null : Number(filters.c);
 
         if (mode === '3d_latin') {
             const group = new THREE.Group();
             for (let c = 0; c < q; c++) {
+                // 根據 c 值篩選
+                if (cFilter !== null && c !== cFilter) continue;
+
                 const color = PALETTE[c % PALETTE.length];
                 const mat = new THREE.MeshPhongMaterial({
                     color: new THREE.Color(color), transparent: true, opacity: 0.65
@@ -293,6 +316,9 @@ class Visualizer3D {
             this.objects.add(group);
         } else if (mode === '3d_lines') {
             for (let c = 0; c < q; c++) {
+                // 根據 c 值篩選
+                if (cFilter !== null && c !== cFilter) continue;
+
                 const color = PALETTE[c % PALETTE.length];
                 const group = new THREE.Group();
                 const material = new THREE.LineBasicMaterial({
@@ -382,10 +408,14 @@ class Visualizer3D {
         const o = -offset - 1.8;
         const origin = new THREE.Vector3(o, o, o);
 
+        // X 軸 (紅色)
         this.objects.add(new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), origin, len + 3, 0xff4444));
+        // Y 軸 (向上, 綠色)
         this.objects.add(new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), origin, len + 3, 0x44ff44));
+        // Z 軸 (深度, 藍色)
         this.objects.add(new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1), origin, len + 3, 0x4444ff));
 
+        // Axis Titles
         const lxTitle = this.makeTextSprite('X (x)', "#ff8888", 60);
         lxTitle.position.set(o + len + 4, o, o);
         lxTitle.scale.set(2, 2, 1);
@@ -401,42 +431,67 @@ class Visualizer3D {
         lzTitle.scale.set(2, 2, 1);
         this.objects.add(lzTitle);
 
+        // 座標軸標籤
         for (let i = 0; i < q; i++) {
             const lbl = field.label(i);
             const size = 1.1;
 
+            // X 標籤
             const lx = this.makeTextSprite(lbl, "#ffaaaa", 40);
             lx.position.set(i * spacing - offset, o - 0.8, o);
             lx.scale.set(size, size, 1);
             this.objects.add(lx);
 
+            // Y 標籤 (0, 1, 0)
             const ly = this.makeTextSprite(lbl, "#aaffaa", 40);
             ly.position.set(o - 0.8, i * spacing - offset, o);
             ly.scale.set(size, size, 1);
             this.objects.add(ly);
 
+            // Z 標籤 (0, 0, 1)
             const lz = this.makeTextSprite(lbl, "#aaaaff", 40);
             lz.position.set(o, o - 0.8, i * spacing - offset);
             lz.scale.set(size, size, 1);
             this.objects.add(lz);
         }
+
     }
 
     makeTextSprite(message, color = "white", fontSize = 42) {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
-        canvas.width = 128;
-        canvas.height = 128;
+        const padding = 14;
+        ctx.font = `bold ${fontSize}px sans-serif`;
+        let width = Math.ceil(ctx.measureText(message).width) + padding * 2;
+        let height = Math.ceil(fontSize * 1.6) + padding;
+
+        if (width < 128) width = 128;
+        if (height < 64) height = 64;
+
+        if (width > 320) {
+            const scale = 320 / width;
+            fontSize = Math.max(16, Math.floor(fontSize * scale));
+            ctx.font = `bold ${fontSize}px sans-serif`;
+            width = Math.ceil(ctx.measureText(message).width) + padding * 2;
+            height = Math.ceil(fontSize * 1.6) + padding;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
         ctx.fillStyle = color;
         ctx.font = `bold ${fontSize}px sans-serif`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(message, 64, 64);
+        ctx.fillText(message, width / 2, height / 2);
 
         const texture = new THREE.CanvasTexture(canvas);
-        const spriteMaterial = new THREE.SpriteMaterial({ map: texture, depthTest: false });
+        texture.minFilter = THREE.LinearFilter;
+        texture.needsUpdate = true;
+        const spriteMaterial = new THREE.SpriteMaterial({ map: texture, depthTest: false, transparent: true });
         const sprite = new THREE.Sprite(spriteMaterial);
         sprite.renderOrder = 999;
+        const baseScale = 0.75;
+        sprite.scale.set((width / 128) * baseScale, (height / 128) * baseScale, 1);
         return sprite;
     }
 }
@@ -461,11 +516,17 @@ function init() {
     axisXSelect = document.getElementById('axis-x-select');
     axisYSelect = document.getElementById('axis-y-select');
     axisZSelect = document.getElementById('axis-z-select');
+    valueSelect = document.getElementById('value-select');
+    valueSelectLabel = document.getElementById('value-select-label');
     view2d = document.getElementById('view-2d');
     view3d = document.getElementById('view-3d');
 
     scene3dLines = new Visualizer3D(document.getElementById('viz-3d-lines'));
     scene3dLatin = new Visualizer3D(document.getElementById('viz-3d-latin'));
+
+    latinTooltip = document.createElement('div');
+    latinTooltip.className = 'latin-tooltip';
+    document.body.appendChild(latinTooltip);
 
     runKBtn.onclick = () => {
         const p = parseInt(pkPInput.value);
@@ -501,6 +562,12 @@ function init() {
     };
     axisZSelect.onchange = e => {
         selectedAxisZ = e.target.value;
+        render();
+    };
+
+    valueSelect.onchange = e => {
+        selectedValue = e.target.value;
+        updateValueSelectLabel();
         render();
     };
 
@@ -565,6 +632,7 @@ function switchField(q) {
     selectedAxisX = 'all';
     selectedAxisY = 'all';
     selectedAxisZ = 'all';
+    selectedValue = 'all';
 
     controls3d.style.display = 'flex';
     show3D = true;
@@ -574,6 +642,7 @@ function switchField(q) {
     aSlider.value = currentA;
 
     updateAxisSelectors();
+    updateValueSelector();
 
     bSlider.min = 0;
     bSlider.max = q - 1;
@@ -628,6 +697,36 @@ function updateAxisSelectors() {
     axisZSelect.value = selectedAxisZ;
 }
 
+function updateValueSelector() {
+    if (!currentField || !valueSelect) return;
+    const q = currentField.q;
+
+    const makeOption = (value, label) => {
+        const opt = document.createElement('option');
+        opt.value = value;
+        opt.textContent = label;
+        return opt;
+    };
+
+    valueSelect.innerHTML = '';
+    valueSelect.appendChild(makeOption('all', 'All'));
+    for (let i = 0; i < q; i++) {
+        const label = currentField.label(i);
+        valueSelect.appendChild(makeOption(String(i), label));
+    }
+
+    valueSelect.value = selectedValue;
+    updateValueSelectLabel();
+}
+
+function updateValueSelectLabel() {
+    if (selectedValue === 'all') {
+        valueSelectLabel.textContent = '顯示: 全部';
+    } else {
+        valueSelectLabel.textContent = `顯示: ${currentField.label(parseInt(selectedValue))}`;
+    }
+}
+
 function updateSliderLabelA() {
     aSliderVal.textContent = (currentA === -1) ? 'a = ∞ (垂直線)' : `a = ${currentField.label(currentA)}`;
 }
@@ -642,13 +741,118 @@ function render() {
         const axisFilters = {
             x: selectedAxisX,
             y: selectedAxisY,
-            z: selectedAxisZ
+            z: selectedAxisZ,
+            c: selectedValue
         };
         scene3dLines.render('3d_lines', currentField, showNumber, currentA, currentB, axisFilters);
         scene3dLatin.render('3d_latin', currentField, showNumber, currentA, currentB, axisFilters);
+        renderPlotlySurface(currentField, currentA, currentB, axisFilters);
+        animate3DRedraw();
     }
     render2D();
     renderLatinSquare(currentField, currentField.q);
+}
+
+function animate3DRedraw() {
+    [scene3dLines, scene3dLatin].forEach(scene => {
+        if (!scene || !scene.renderer || !scene.renderer.domElement) return;
+        const canvas = scene.renderer.domElement;
+        canvas.style.opacity = '0';
+        requestAnimationFrame(() => {
+            canvas.style.opacity = '1';
+        });
+    });
+}
+
+function renderPlotlySurface(field, aVal, bVal, filters) {
+    if (!window.Plotly) return;
+    const g = document.getElementById('viz-3d-plotly');
+    if (!g) return;
+
+    if (currentA === -1 || currentA === 0) {
+        Plotly.purge(g);
+        return; // Plotly mapping needs x,y plane for Z
+    }
+
+    const q = field.q;
+    const cFilter = filters.c === 'all' ? null : parseInt(filters.c);
+
+    const xVals = [];
+    const yVals = [];
+    const tickTexts = [];
+    for (let i = 0; i < q; i++) {
+        xVals.push(i);
+        yVals.push(i);
+        tickTexts.push(field.label(i));
+    }
+
+    const data = [];
+    const colorscales = ['Viridis', 'Plasma', 'Inferno', 'Magma', 'Cividis', 'Blues', 'Reds', 'Greens'];
+
+    for (let c = 0; c < q; c++) {
+        if (cFilter !== null && c !== cFilter) continue;
+
+        const zData = [];
+        for (let y = 0; y < q; y++) {
+            const row = [];
+            for (let x = 0; x < q; x++) {
+                const ax = field.mul(aVal, x);
+                const by = field.mul(bVal, y);
+                const z = field.add(field.add(ax, by), c);
+                row.push(z);
+            }
+            zData.push(row);
+        }
+
+        data.push({
+            z: zData,
+            x: xVals,
+            y: yVals,
+            type: 'surface',
+            name: `c=${field.label(c)}`,
+            showscale: cFilter !== null || c === 0,
+            colorscale: colorscales[c % colorscales.length],
+            opacity: 0.85,
+            contours: {
+                z: { show: true, usecolormap: true, highlightcolor: "limegreen", project: { z: true } }
+            }
+        });
+    }
+
+    const layout = {
+        margin: { l: 0, r: 0, b: 0, t: 0 },
+        paper_bgcolor: 'transparent',
+        plot_bgcolor: 'transparent',
+        scene: {
+            xaxis: {
+                title: 'X',
+                tickmode: 'array',
+                tickvals: xVals,
+                ticktext: tickTexts,
+                color: '#e0e0e0',
+                gridcolor: 'rgba(255, 255, 255, 0.2)'
+            },
+            yaxis: {
+                title: 'Y',
+                tickmode: 'array',
+                tickvals: yVals,
+                ticktext: tickTexts,
+                color: '#e0e0e0',
+                gridcolor: 'rgba(255, 255, 255, 0.2)'
+            },
+            zaxis: {
+                title: 'Z',
+                tickmode: 'array',
+                tickvals: xVals,
+                ticktext: tickTexts,
+                color: '#e0e0e0',
+                gridcolor: 'rgba(255, 255, 255, 0.2)'
+            },
+            bgcolor: 'transparent'
+        }
+    };
+
+    Plotly.react(g, data, layout, { responsive: true, displayModeBar: false });
 }
 
 function render2D() {
@@ -691,7 +895,13 @@ function render2D() {
         svgEl.appendChild(ty);
     }
 
+    // 決定要顯示的 c 值
+    const cFilter = selectedValue === 'all' ? null : parseInt(selectedValue);
+
     for (let b = 0; b < q; b++) {
+        // 根據 c 值篩選
+        if (cFilter !== null && b !== cFilter) continue;
+
         let pts = [];
         if (currentA === -1) {
             for (let y = 0; y < q; y++) pts.push({ x: b, y });
@@ -726,6 +936,7 @@ function render2D() {
         path.setAttribute('class', 'line-path');
         path.setAttribute('stroke', color);
         path.setAttribute('stroke-width', strokeW);
+        path.classList.add('redraw');
         g.appendChild(path);
 
         // 懸停標籤
@@ -739,13 +950,29 @@ function render2D() {
         svgEl.appendChild(g);
     }
 
-    for (let y = 0; y < q; y++) {
+    // 繪製網格點，根據篩選顯示
+    if (cFilter === null) {
+        // 顯示所有點
+        for (let y = 0; y < q; y++) {
+            for (let x = 0; x < q; x++) {
+                const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                c.setAttribute('cx', px(x));
+                c.setAttribute('cy', py(y));
+                c.setAttribute('r', dotR);
+                c.setAttribute('class', 'grid-point');
+                svgEl.appendChild(c);
+            }
+        }
+    } else {
+        // 只顯示對應選定 c 值的點
         for (let x = 0; x < q; x++) {
+            const y = field.add(field.mul(currentA, x), cFilter);
             const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
             c.setAttribute('cx', px(x));
             c.setAttribute('cy', py(y));
             c.setAttribute('r', dotR);
             c.setAttribute('class', 'grid-point');
+            c.setAttribute('fill', PALETTE[cFilter % PALETTE.length]);
             svgEl.appendChild(c);
         }
     }
@@ -753,11 +980,18 @@ function render2D() {
 
 function renderLatinSquare(field, q) {
     latinSquareEl.innerHTML = '';
-    latinSquareEl.style.gridTemplateColumns = `repeat(${q}, 1fr)`;
 
-    const cellSize = Math.max(20, Math.min(60, Math.floor(280 / q)));
-    const cellFont = Math.max(7, Math.min(16, cellSize * 0.4));
-    latinSquareEl.style.gap = Math.max(1, Math.min(5, Math.floor(cellSize * 0.1))) + 'px';
+    const maxMatrixSize = Math.min(520, Math.max(320, q * 56));
+    const gap = Math.max(3, Math.min(8, Math.floor(maxMatrixSize / q / 10)));
+    const cellSize = Math.max(28, Math.min(90, Math.floor((maxMatrixSize - (q - 1) * gap) / q)));
+    const cellFont = Math.max(8, Math.min(16, Math.floor(cellSize * 0.4)));
+
+    latinSquareEl.style.gap = `${gap}px`;
+    latinSquareEl.style.gridTemplateColumns = `repeat(${q}, ${cellSize}px)`;
+    latinSquareEl.style.width = `${q * cellSize + (q - 1) * gap + 28}px`;
+    latinSquareEl.style.height = `${q * cellSize + (q - 1) * gap + 28}px`;
+
+    const cFilter = selectedValue === 'all' ? null : parseInt(selectedValue);
 
     if (currentA === -1 || currentA === 0) {
         for (let i = 0; i < q * q; i++) {
@@ -766,7 +1000,6 @@ function renderLatinSquare(field, q) {
     } else {
         for (let yi = q - 1; yi >= 0; yi--) {
             for (let x = 0; x < q; x++) {
-                // Find b such that y = a*x + b
                 let b_val = 0;
                 for (let b_try = 0; b_try < q; b_try++) {
                     if (field.add(field.mul(currentA, x), b_try) === yi) {
@@ -774,7 +1007,15 @@ function renderLatinSquare(field, q) {
                         break;
                     }
                 }
-                latinSquareEl.appendChild(makeCell(field.label(b_val), PALETTE[b_val % PALETTE.length], cellSize, cellFont));
+                
+                // 根據 c 值篩選
+                const cellText = (cFilter !== null && b_val !== cFilter)
+                    ? ''
+                    : field.label(b_val);
+                const detailText = cellText
+                    ? `x = ${field.label(x)} | y = ${field.label(yi)} | c = ${field.label(b_val)}`
+                    : '';
+                latinSquareEl.appendChild(makeCell(cellText, cellText ? PALETTE[b_val % PALETTE.length] : '#333', cellSize, cellFont, detailText));
             }
         }
     }
@@ -790,7 +1031,7 @@ function makeText(content, x, y, cls, fontSize) {
     return t;
 }
 
-function makeCell(text, color, size, fontSize) {
+function makeCell(text, color, size, fontSize, tooltipText = '') {
     const div = document.createElement('div');
     div.className = 'latin-cell';
     div.textContent = text;
@@ -799,6 +1040,23 @@ function makeCell(text, color, size, fontSize) {
     div.style.width = size + 'px';
     div.style.height = size + 'px';
     div.style.fontSize = fontSize + 'px';
+
+    if (tooltipText && latinTooltip) {
+        div.addEventListener('mouseenter', () => {
+            latinTooltip.textContent = tooltipText;
+            latinTooltip.classList.add('visible');
+        });
+        div.addEventListener('mousemove', (event) => {
+            const offsetX = 0;
+            const offsetY = 24;
+            latinTooltip.style.left = `${event.clientX + offsetX}px`;
+            latinTooltip.style.top = `${event.clientY - offsetY}px`;
+        });
+        div.addEventListener('mouseleave', () => {
+            latinTooltip.classList.remove('visible');
+        });
+    }
+
     return div;
 }
 

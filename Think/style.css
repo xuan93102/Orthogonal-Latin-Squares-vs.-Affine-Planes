@@ -145,6 +145,34 @@ h1 {
     cursor: grabbing;
 }
 
+.three-toggle-overlay {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 15;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: rgba(12, 14, 24, 0.82);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+}
+
+.three-toggle-overlay label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #e6e8ff;
+    font-size: 0.92em;
+    font-weight: 600;
+}
+
+.three-toggle-overlay input[type="checkbox"] {
+    accent-color: var(--primary-color);
+}
+
 .field-tab {
     padding: 9px 18px;
     background: var(--surface-2);
@@ -234,28 +262,38 @@ input[type="range"] {
 .equation-display {
     font-size: 1.25em;
     font-family: monospace;
-    padding: 14px;
-    background: #1c2036;
-    border-radius: 10px;
+    padding: 14px 18px;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
+    border-radius: 14px;
     text-align: center;
     border-left: 4px solid var(--primary-color);
     line-height: 1.4;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-width: 180px;
-    flex: 1;
+    min-width: 260px;
+    max-width: 360px;
+    flex: none;
+    white-space: nowrap;
+    overflow-x: auto;
+}
+
+.equation-display > div {
+    white-space: nowrap;
 }
 
 .field-info {
-    background: var(--surface-2);
-    border-radius: 10px;
-    padding: 12px 14px;
-    font-size: 0.82em;
-    line-height: 1.6;
-    color: #aaa;
-    min-width: 220px;
-    flex: 2;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0.08));
+    border-radius: 14px;
+    padding: 16px 18px;
+    font-size: 0.92em;
+    line-height: 1.65;
+    color: #ddd;
+    min-width: 240px;
+    flex: 1.2;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 18px 60px rgba(0, 0, 0, 0.18);
 }
 
 .info-title {
@@ -312,6 +350,23 @@ svg {
     cursor: pointer;
 }
 
+.line-path.redraw {
+    stroke-dasharray: 1200;
+    stroke-dashoffset: 1200;
+    animation: draw-line 0.65s ease forwards;
+}
+
+@keyframes draw-line {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+.visualization canvas {
+    transition: opacity 0.35s ease;
+    opacity: 1;
+}
+
 .line-path:hover {
     opacity: 1;
 }
@@ -362,6 +417,8 @@ svg {
     box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.5);
     max-height: 520px;
     overflow: auto;
+    width: auto;
+    max-width: 100%;
 }
 
 .latin-cell {
@@ -370,15 +427,44 @@ svg {
     justify-content: center;
     font-family: monospace;
     font-weight: bold;
-    border-radius: 5px;
+    border-radius: 7px;
     background-color: #252836;
     border: 1px solid transparent;
-    transition: transform 0.15s, box-shadow 0.15s;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
     cursor: default;
     line-height: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    position: relative;
+    z-index: 1;
 }
 
 .latin-cell:hover {
-    transform: scale(1.15);
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+    transform: scale(1.16);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+    z-index: 2;
+}
+
+.latin-tooltip {
+    position: fixed;
+    pointer-events: none;
+    background: rgba(19, 21, 33, 0.98);
+    color: #f8f8ff;
+    border: 1px solid rgba(187, 134, 252, 0.22);
+    border-radius: 12px;
+    padding: 8px 12px;
+    font-size: 0.85em;
+    line-height: 1.4;
+    white-space: nowrap;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+    opacity: 0;
+    transform: translate(-50%, -10px);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    z-index: 9999;
+}
+
+.latin-tooltip.visible {
+    opacity: 1;
+    transform: translate(-50%, -18px);
 }

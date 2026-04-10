@@ -18,8 +18,16 @@
         </header>
 
         <main>
+            <!-- Tabs Navigation -->
+            <div class="tabs-container">
+                <button class="tab-btn active" data-target="panel-1">1. Affine Simulator</button>
+                <button class="tab-btn" data-target="panel-2">2. Latin Squares</button>
+                <button class="tab-btn" data-target="panel-3">3. Orthogonality</button>
+                <button class="tab-btn" data-target="panel-4">4. 3D Representation</button>
+            </div>
+
             <!-- Affine Plane Control Panel -->
-            <section class="panel glass-panel">
+            <section id="panel-1" class="panel glass-panel tab-content active">
                 <h2>1. Affine Line Simulator</h2>
                 <div class="controls">
                     <div class="control-group">
@@ -54,7 +62,7 @@
             </section>
 
             <!-- Latin Squares Generated -->
-            <section class="panel glass-panel">
+            <section id="panel-2" class="panel glass-panel tab-content">
                 <h2>2. Latin Squares Generation</h2>
                 <p>Derived from parallel lines of slope a &isin; {1, 2, 3}</p>
                 <div class="latin-squares-container">
@@ -74,7 +82,7 @@
             </section>
 
             <!-- Superimposition Verifier -->
-            <section class="panel glass-panel">
+            <section id="panel-3" class="panel glass-panel tab-content">
                 <h2>3. Orthogonality Verification</h2>
                 <p>Superimpose two Latin Squares to verify orthogonality.</p>
                 
@@ -108,7 +116,7 @@
             </section>
 
             <!-- 3D Overlaid Planes Representation -->
-            <section class="panel glass-panel">
+            <section id="panel-4" class="panel glass-panel tab-content">
                 <h2>4. 3D Overlaid Planes Representation</h2>
                 <p>Visualize the superimposed orthogonal arrays as a 3D structure.</p>
                 <div class="cube-controls controls">

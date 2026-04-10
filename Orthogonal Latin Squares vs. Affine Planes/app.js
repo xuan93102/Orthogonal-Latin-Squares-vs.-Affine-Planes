@@ -68,6 +68,28 @@ function init() {
     cubeValFilter.addEventListener('change', render3DCube);
     window.addEventListener('resize', updateAffinePlane);
 
+    // Tab Switching Logic
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Remove active class from all tabs and contents
+            tabBtns.forEach(b => b.classList.remove('active'));
+            tabContents.forEach(c => c.classList.remove('active'));
+            
+            // Add active class to clicked tab and corresponding content
+            btn.classList.add('active');
+            const targetId = btn.getAttribute('data-target');
+            document.getElementById(targetId).classList.add('active');
+            
+            // Trigger resize for SVG line update if Affine Simulator is opened
+            if (targetId === 'panel-1') {
+                updateAffinePlane();
+            }
+        });
+    });
+
     // Cube Drag Interactions
     cubeWrapper.addEventListener('mousedown', startCubeDrag);
     cubeWrapper.addEventListener('contextmenu', (e) => e.preventDefault()); // Prevent right-click menu

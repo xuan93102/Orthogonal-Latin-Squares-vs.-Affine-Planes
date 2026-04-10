@@ -824,6 +824,10 @@ function renderPlotlySurface(field, aVal, bVal, filters) {
         paper_bgcolor: 'transparent',
         plot_bgcolor: 'transparent',
         scene: {
+            camera: {
+                up: { x: 0, y: 1, z: 0 },
+                eye: { x: 1.5, y: 1.2, z: 1.5 }
+            },
             xaxis: {
                 title: 'X',
                 tickmode: 'array',

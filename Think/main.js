@@ -185,7 +185,9 @@ const PALETTE = [
 let currentField = null;
 let currentA = 1;
 let currentB = 1;
-let show3D = false; // true if GF(2^k)
+let activeView = '2d';
+let active2dPanel = 'line';
+let active3dPanel = 'lines';
 let showNumber = false;
 
 let svgEl, latinSquareEl, eqDisplay2D, eqDisplay3D, aSlider, aSliderVal, fieldDesc;
@@ -194,11 +196,11 @@ let kInput, pkPInput, runKBtn;
 let controls3d, showNumberCheck, view2d, view3d;
 let axisXSelect, axisYSelect, axisZSelect;
 let selectedAxisX = 'all', selectedAxisY = 'all', selectedAxisZ = 'all';
-let valueSelect, valueSelectLabel;
+let valueSelect, valueSelectLabel, valueSelectWrapper, valuePlaceholder2D, valuePlaceholder3D;
 let selectedValue = 'all';
 let latinTooltip = null;
 
-let scene3dLines, scene3dLatin; // 3D 場景管理器執行個體
+let scene3dLines, scene3dSurface, scene3dLatin; // 3D 場景管理器執行個體
 
 
 class Visualizer3D {
@@ -379,6 +381,181 @@ class Visualizer3D {
 
                 this.objects.add(group);
             }
+        } else if (mode === '3d_surface') {
+            const xAll = xFilter === null;
+            const yAll = yFilter === null;
+            const zAll = zFilter === null;
+            const xRange = xAll ? Array.from({ length: q }, (_, i) => i) : [Number(xFilter)];
+            const yRange = yAll ? Array.from({ length: q }, (_, i) => i) : [Number(yFilter)];
+
+            const cRange = cFilter === null ? Array.from({ length: q }, (_, i) => i) : [Number(cFilter)];
+            if (!xAll && yAll && zAll) {
+                const x = Number(xFilter);
+                const positions = [];
+                const indices = [];
+                for (let cIndex = 0; cIndex < cRange.length; cIndex++) {
+                    const c = cRange[cIndex];
+                    for (let y = 0; y < q; y++) {
+                        const ax = field.mul(aVal, x);
+                        const by = field.mul(bVal, y);
+                        const z = field.add(field.add(ax, by), c);
+                        positions.push(x * spacing - offset, y * spacing - offset, z * spacing - offset);
+                    }
+                }
+                for (let cIndex = 0; cIndex < cRange.length - 1; cIndex++) {
+                    for (let y = 0; y < q - 1; y++) {
+                        const i = cIndex * q + y;
+                        indices.push(i, i + 1, i + q);
+                        indices.push(i + 1, i + q + 1, i + q);
+                    }
+                }
+                const geom = new THREE.BufferGeometry();
+                geom.setIndex(indices);
+                geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+                geom.computeVertexNormals();
+                this.objects.add(new THREE.Mesh(geom, new THREE.MeshPhongMaterial({
+                    color: new THREE.Color(PALETTE[0]),
+                    transparent: true,
+                    opacity: 0.55,
+                    side: THREE.DoubleSide,
+                    shininess: 30,
+                    flatShading: true
+                })));
+            } else if (xAll && !yAll && zAll) {
+                const y = Number(yFilter);
+                const positions = [];
+                const indices = [];
+                for (let cIndex = 0; cIndex < cRange.length; cIndex++) {
+                    const c = cRange[cIndex];
+                    for (let x = 0; x < q; x++) {
+                        const ax = field.mul(aVal, x);
+                        const by = field.mul(bVal, y);
+                        const z = field.add(field.add(ax, by), c);
+                        positions.push(x * spacing - offset, y * spacing - offset, z * spacing - offset);
+                    }
+                }
+                for (let cIndex = 0; cIndex < cRange.length - 1; cIndex++) {
+                    for (let x = 0; x < q - 1; x++) {
+                        const i = cIndex * q + x;
+                        indices.push(i, i + 1, i + q);
+                        indices.push(i + 1, i + q + 1, i + q);
+                    }
+                }
+                const geom = new THREE.BufferGeometry();
+                geom.setIndex(indices);
+                geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+                geom.computeVertexNormals();
+                this.objects.add(new THREE.Mesh(geom, new THREE.MeshPhongMaterial({
+                    color: new THREE.Color(PALETTE[1]),
+                    transparent: true,
+                    opacity: 0.55,
+                    side: THREE.DoubleSide,
+                    shininess: 30,
+                    flatShading: true
+                })));
+            } else if (xAll && yAll && !zAll) {
+                const z = Number(zFilter) * spacing - offset;
+                const positions = [];
+                const indices = [];
+                for (let y = 0; y < q; y++) {
+                    for (let x = 0; x < q; x++) {
+                        positions.push(x * spacing - offset, y * spacing - offset, z);
+                    }
+                }
+                for (let y = 0; y < q - 1; y++) {
+                    for (let x = 0; x < q - 1; x++) {
+                        const i = y * q + x;
+                        indices.push(i, i + 1, i + q);
+                        indices.push(i + 1, i + q + 1, i + q);
+                    }
+                }
+                const geom = new THREE.BufferGeometry();
+                geom.setIndex(indices);
+                geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+                geom.computeVertexNormals();
+                this.objects.add(new THREE.Mesh(geom, new THREE.MeshPhongMaterial({
+                    color: new THREE.Color('#8888ff'),
+                    transparent: true,
+                    opacity: 0.25,
+                    side: THREE.DoubleSide,
+                    shininess: 10,
+                    flatShading: true
+                })));
+            } else {
+                for (let c = 0; c < q; c++) {
+                    if (cFilter !== null && c !== cFilter) continue;
+
+                    const positions = [];
+                    const indices = [];
+                    for (let yIndex = 0; yIndex < yRange.length; yIndex++) {
+                        const y = yRange[yIndex];
+                        for (let xIndex = 0; xIndex < xRange.length; xIndex++) {
+                            const x = xRange[xIndex];
+                            const ax = field.mul(aVal, x);
+                            const by = field.mul(bVal, y);
+                            const z = field.add(field.add(ax, by), c);
+                            if (!zAll && z !== Number(zFilter)) {
+                                positions.push(NaN, NaN, NaN);
+                            } else {
+                                positions.push(x * spacing - offset, y * spacing - offset, z * spacing - offset);
+                            }
+                        }
+                    }
+                    if (xRange.length > 1 && yRange.length > 1) {
+                        for (let y = 0; y < yRange.length - 1; y++) {
+                            for (let x = 0; x < xRange.length - 1; x++) {
+                                const i = y * xRange.length + x;
+                                indices.push(i, i + 1, i + xRange.length);
+                                indices.push(i + 1, i + xRange.length + 1, i + xRange.length);
+                            }
+                        }
+                        const geom = new THREE.BufferGeometry();
+                        geom.setIndex(indices);
+                        geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+                        geom.computeVertexNormals();
+                        this.objects.add(new THREE.Mesh(geom, new THREE.MeshPhongMaterial({
+                            color: new THREE.Color(PALETTE[c % PALETTE.length]),
+                            transparent: true,
+                            opacity: 0.55,
+                            side: THREE.DoubleSide,
+                            shininess: 30,
+                            flatShading: true
+                        })));
+                    } else if (xRange.length === 1 && yRange.length > 1) {
+                        const positionsLine = [];
+                        for (let i = 0; i < positions.length; i += 3) {
+                            if (!Number.isNaN(positions[i])) {
+                                positionsLine.push(new THREE.Vector3(positions[i], positions[i + 1], positions[i + 2]));
+                            }
+                        }
+                        if (positionsLine.length > 0) {
+                            const pointMat = new THREE.MeshPhongMaterial({ color: new THREE.Color(PALETTE[c % PALETTE.length]) });
+                            const dotGeom = new THREE.SphereGeometry(0.12, 12, 12);
+                            positionsLine.forEach(pt => {
+                                const dot = new THREE.Mesh(dotGeom, pointMat);
+                                dot.position.copy(pt);
+                                this.objects.add(dot);
+                            });
+                        }
+                    } else if (yRange.length === 1 && xRange.length > 1) {
+                        const positionsLine = [];
+                        for (let i = 0; i < positions.length; i += 3) {
+                            if (!Number.isNaN(positions[i])) {
+                                positionsLine.push(new THREE.Vector3(positions[i], positions[i + 1], positions[i + 2]));
+                            }
+                        }
+                        if (positionsLine.length > 0) {
+                            const pointMat = new THREE.MeshPhongMaterial({ color: new THREE.Color(PALETTE[c % PALETTE.length]) });
+                            const dotGeom = new THREE.SphereGeometry(0.12, 12, 12);
+                            positionsLine.forEach(pt => {
+                                const dot = new THREE.Mesh(dotGeom, pointMat);
+                                dot.position.copy(pt);
+                                this.objects.add(dot);
+                            });
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -518,10 +695,14 @@ function init() {
     axisZSelect = document.getElementById('axis-z-select');
     valueSelect = document.getElementById('value-select');
     valueSelectLabel = document.getElementById('value-select-label');
+    valueSelectWrapper = document.getElementById('value-select-wrapper');
+    valuePlaceholder2D = document.getElementById('value-placeholder-2d');
+    valuePlaceholder3D = document.getElementById('value-placeholder-3d');
     view2d = document.getElementById('view-2d');
     view3d = document.getElementById('view-3d');
 
     scene3dLines = new Visualizer3D(document.getElementById('viz-3d-lines'));
+    scene3dSurface = new Visualizer3D(document.getElementById('viz-3d-surface'));
     scene3dLatin = new Visualizer3D(document.getElementById('viz-3d-latin'));
 
     latinTooltip = document.createElement('div');
@@ -549,7 +730,7 @@ function init() {
 
     showNumberCheck.onchange = e => {
         showNumber = e.target.checked;
-        if (show3D) render();
+        render();
     };
 
     axisXSelect.onchange = e => {
@@ -571,6 +752,31 @@ function init() {
         render();
     };
 
+    const tab2D = document.getElementById('tab-2d');
+    const tab3D = document.getElementById('tab-3d');
+    [tab2D, tab3D].forEach(button => {
+        button.addEventListener('click', () => setActiveView(button.id === 'tab-2d' ? '2d' : '3d'));
+    });
+
+    const tab2DLine = document.getElementById('tab-2d-line');
+    const tab2DLatin = document.getElementById('tab-2d-latin');
+    [tab2DLine, tab2DLatin].forEach(button => {
+        button.addEventListener('click', () => setActive2DPanel(button.id === 'tab-2d-line' ? 'line' : 'latin'));
+    });
+
+    const tab3DLines = document.getElementById('tab-3d-lines');
+    const tab3DSurface = document.getElementById('tab-3d-surface');
+    const tab3DPlotly = document.getElementById('tab-3d-plotly');
+    const tab3DLatin = document.getElementById('tab-3d-latin');
+    [tab3DLines, tab3DSurface, tab3DPlotly, tab3DLatin].forEach(button => {
+        button.addEventListener('click', () => {
+            if (button.id === 'tab-3d-lines') setActive3DPanel('lines');
+            else if (button.id === 'tab-3d-surface') setActive3DPanel('surface');
+            else if (button.id === 'tab-3d-plotly') setActive3DPanel('plotly');
+            else setActive3DPanel('latin');
+        });
+    });
+
     aSlider.addEventListener('input', e => {
         const v = parseInt(e.target.value);
         setA(v === -1 ? 'inf' : v);
@@ -582,6 +788,7 @@ function init() {
     });
 
     switchField(4);
+    updatePanelVisibility();
 }
 
 function isPrime(n) {
@@ -602,29 +809,94 @@ function updateKLimit() {
     if (parseInt(kInput.value) > maxK) kInput.value = maxK;
 }
 
-function updateDisplayMode() {
-    if (show3D) {
-        view2d.style.display = 'flex';
-        view3d.style.display = 'flex';
-        document.getElementById('b-slider-group').style.display = 'flex';
-        document.getElementById('a-slider-label-text').innerText = '選擇 X 係數 (a)';
-        if (currentA === -1) setA(0);
-        aSlider.min = 0;
-        eqDisplay3D.style.display = 'block';
-        setTimeout(() => window.dispatchEvent(new Event('resize')), 10);
-    } else {
-        view2d.style.display = 'flex';
-        view3d.style.display = 'none';
-        document.getElementById('b-slider-group').style.display = 'none';
-        document.getElementById('a-slider-label-text').innerText = '選擇斜率 (a 值)';
-        aSlider.min = -1;
-        eqDisplay3D.style.display = 'none';
+function setActiveView(mode) {
+    activeView = mode;
+    const tab2D = document.getElementById('tab-2d');
+    const tab3D = document.getElementById('tab-3d');
+    tab2D.classList.toggle('active', mode === '2d');
+    tab3D.classList.toggle('active', mode === '3d');
+    tab2D.setAttribute('aria-selected', mode === '2d');
+    tab3D.setAttribute('aria-selected', mode === '3d');
+    updateViewMode();
+}
+
+function updateViewMode() {
+    const is3d = activeView === '3d';
+    view2d.style.display = is3d ? 'none' : 'flex';
+    view3d.style.display = is3d ? 'flex' : 'none';
+    controls3d.style.display = is3d ? 'flex' : 'none';
+    document.getElementById('b-slider-group').style.display = is3d ? 'flex' : 'none';
+    document.getElementById('a-slider-label-text').innerText = is3d ? '選擇 X 係數 (a)' : '選擇斜率 (a 值)';
+    updateValueControlPlacement();
+    aSlider.min = is3d ? 0 : -1;
+    if (!is3d && currentA === -1) {
+        currentA = 0;
+        aSlider.value = currentA;
+        updateSliderLabelA();
     }
+    eqDisplay3D.style.display = is3d ? 'block' : 'none';
+    if (is3d) {
+        setTimeout(() => window.dispatchEvent(new Event('resize')), 10);
+    }
+    updatePanelVisibility();
     render();
 }
 
-function switchField(q) {
-    currentField = createField(q);
+function setActive2DPanel(panel) {
+    active2dPanel = panel;
+    updatePanelVisibility();
+}
+
+function updateValueControlPlacement() {
+    if (!valueSelectWrapper || !valuePlaceholder2D || !valuePlaceholder3D) return;
+    if (activeView === '3d') {
+        valuePlaceholder3D.appendChild(valueSelectWrapper);
+    } else {
+        valuePlaceholder2D.appendChild(valueSelectWrapper);
+    }
+}
+
+function setActive3DPanel(panel) {
+    active3dPanel = panel;
+    updatePanelVisibility();
+    if (activeView === '3d') render();
+}
+
+function updatePanelVisibility() {
+    ['line', 'latin'].forEach(panel => {
+        const button = document.getElementById(`tab-2d-${panel}`);
+        const content = document.querySelector(`.panel-2d-${panel}`);
+        const active = active2dPanel === panel;
+        if (button) button.classList.toggle('active', active);
+        if (button) button.setAttribute('aria-selected', active);
+        if (content) content.classList.toggle('hidden', !active);
+    });
+    ['lines', 'surface', 'plotly', 'latin'].forEach(panel => {
+        let buttonId, contentClass;
+        if (panel === 'plotly') {
+            buttonId = 'tab-3d-plotly';
+            contentClass = 'panel-3d-plotly';
+        } else if (panel === 'latin') {
+            buttonId = 'tab-3d-latin';
+            contentClass = 'panel-3d-latin';
+        } else {
+            buttonId = `tab-3d-${panel}`;
+            contentClass = `panel-3d-${panel}`;
+        }
+        const button = document.getElementById(buttonId);
+        const content = document.querySelector(`.${contentClass}`);
+        const active = active3dPanel === panel;
+        if (button) button.classList.toggle('active', active);
+        if (button) button.setAttribute('aria-selected', active);
+        if (content) content.classList.toggle('hidden', !active);
+    });
+    if (activeView === '3d') {
+        setTimeout(() => window.dispatchEvent(new Event('resize')), 10);
+    }
+}
+
+function switchField(q, p = null, k = null) {
+    currentField = createField(q, p, k);
     if (!currentField) return;
 
     currentA = 1;
@@ -633,9 +905,6 @@ function switchField(q) {
     selectedAxisY = 'all';
     selectedAxisZ = 'all';
     selectedValue = 'all';
-
-    controls3d.style.display = 'flex';
-    show3D = true;
 
     aSlider.min = 0;
     aSlider.max = q - 1;
@@ -651,7 +920,7 @@ function switchField(q) {
     fieldDesc.innerText = currentField.desc;
     updateSliderLabelA();
     updateSliderLabelB();
-    updateDisplayMode();
+    updateViewMode();
 }
 
 function setA(val) {
@@ -736,7 +1005,7 @@ function updateSliderLabelB() {
 }
 
 function render() {
-    if (show3D) {
+    if (activeView === '3d') {
         eqDisplay3D.innerHTML = `3D: z = ${currentField.label(currentA)}·x + ${currentField.label(currentB)}·y + c`;
         const axisFilters = {
             x: selectedAxisX,
@@ -744,17 +1013,28 @@ function render() {
             z: selectedAxisZ,
             c: selectedValue
         };
-        scene3dLines.render('3d_lines', currentField, showNumber, currentA, currentB, axisFilters);
-        scene3dLatin.render('3d_latin', currentField, showNumber, currentA, currentB, axisFilters);
-        renderPlotlySurface(currentField, currentA, currentB, axisFilters);
-        animate3DRedraw();
+        
+        // 根據活動面板渲染對應的視圖
+        if (active3dPanel === 'lines') {
+            scene3dLines.render('3d_lines', currentField, showNumber, currentA, currentB, axisFilters);
+            animate3DRedraw();
+        } else if (active3dPanel === 'surface') {
+            scene3dSurface.render('3d_surface', currentField, showNumber, currentA, currentB, axisFilters);
+            animate3DRedraw();
+        } else if (active3dPanel === 'plotly') {
+            // 使用 Plotly 渲染填色面
+            renderPlotlySurface(currentField, currentA, currentB, axisFilters);
+        } else if (active3dPanel === 'latin') {
+            scene3dLatin.render('3d_latin', currentField, showNumber, currentA, currentB, axisFilters);
+            animate3DRedraw();
+        }
     }
     render2D();
     renderLatinSquare(currentField, currentField.q);
 }
 
 function animate3DRedraw() {
-    [scene3dLines, scene3dLatin].forEach(scene => {
+    [scene3dLines, scene3dSurface, scene3dLatin].forEach(scene => {
         if (!scene || !scene.renderer || !scene.renderer.domElement) return;
         const canvas = scene.renderer.domElement;
         canvas.style.opacity = '0';
@@ -788,6 +1068,41 @@ function renderPlotlySurface(field, aVal, bVal, filters) {
 
     const data = [];
     const colorscales = ['Viridis', 'Plasma', 'Inferno', 'Magma', 'Cividis', 'Blues', 'Reds', 'Greens'];
+    const maxVal = q - 1;
+
+    data.push({
+        type: 'scatter3d',
+        mode: 'lines+markers',
+        x: [0, maxVal],
+        y: [0, 0],
+        z: [0, 0],
+        line: { color: '#ff4444', width: 6 },
+        marker: { size: 3, color: '#ff4444' },
+        showlegend: false,
+        hoverinfo: 'skip'
+    });
+    data.push({
+        type: 'scatter3d',
+        mode: 'lines+markers',
+        x: [0, 0],
+        y: [0, maxVal],
+        z: [0, 0],
+        line: { color: '#44ff44', width: 6 },
+        marker: { size: 3, color: '#44ff44' },
+        showlegend: false,
+        hoverinfo: 'skip'
+    });
+    data.push({
+        type: 'scatter3d',
+        mode: 'lines+markers',
+        x: [0, 0],
+        y: [0, 0],
+        z: [0, maxVal],
+        line: { color: '#4444ff', width: 6 },
+        marker: { size: 3, color: '#4444ff' },
+        showlegend: false,
+        hoverinfo: 'skip'
+    });
 
     for (let c = 0; c < q; c++) {
         if (cFilter !== null && c !== cFilter) continue;
@@ -828,30 +1143,87 @@ function renderPlotlySurface(field, aVal, bVal, filters) {
                 up: { x: 0, y: 1, z: 0 },
                 eye: { x: 1.5, y: 1.2, z: 1.5 }
             },
+            aspectmode: 'cube',
             xaxis: {
-                title: 'X',
+                title: { text: '', font: { color: '#ff8888', size: 14 } },
                 tickmode: 'array',
                 tickvals: xVals,
                 ticktext: tickTexts,
-                color: '#e0e0e0',
-                gridcolor: 'rgba(255, 255, 255, 0.2)'
+                tickfont: { color: '#ffaaaa', size: 14 },
+                linecolor: 'transparent',
+                tickcolor: '#ff4444',
+                zeroline: false,
+                showline: false,
+                showgrid: false,
+                showbackground: false,
+                ticks: 'outside',
+                ticklen: 6,
+                tickwidth: 2,
+                showspikes: false
             },
             yaxis: {
-                title: 'Y',
+                title: { text: '', font: { color: '#88ff88', size: 14 } },
                 tickmode: 'array',
                 tickvals: yVals,
                 ticktext: tickTexts,
-                color: '#e0e0e0',
-                gridcolor: 'rgba(255, 255, 255, 0.2)'
+                tickfont: { color: '#aaffaa', size: 14 },
+                linecolor: 'transparent',
+                tickcolor: '#44ff44',
+                zeroline: false,
+                showline: false,
+                showgrid: false,
+                showbackground: false,
+                ticks: 'outside',
+                ticklen: 6,
+                tickwidth: 2,
+                showspikes: false
             },
             zaxis: {
-                title: 'Z',
+                title: { text: '', font: { color: '#8888ff', size: 14 } },
                 tickmode: 'array',
                 tickvals: xVals,
                 ticktext: tickTexts,
-                color: '#e0e0e0',
-                gridcolor: 'rgba(255, 255, 255, 0.2)'
+                tickfont: { color: '#aaaaff', size: 14 },
+                linecolor: 'transparent',
+                tickcolor: '#4444ff',
+                zeroline: false,
+                showline: false,
+                showgrid: false,
+                showbackground: false,
+                ticks: 'outside',
+                ticklen: 6,
+                tickwidth: 2,
+                showspikes: false
             },
+            annotations: [
+                {
+                    x: maxVal,
+                    y: 0,
+                    z: 0,
+                    text: 'X (x)',
+                    xanchor: 'left',
+                    font: { color: '#ff8888', size: 18 },
+                    showarrow: false
+                },
+                {
+                    x: 0,
+                    y: maxVal,
+                    z: 0,
+                    text: 'Y (y)',
+                    xanchor: 'left',
+                    font: { color: '#88ff88', size: 18 },
+                    showarrow: false
+                },
+                {
+                    x: 0,
+                    y: 0,
+                    z: maxVal,
+                    text: 'Z (z)',
+                    xanchor: 'left',
+                    font: { color: '#8888ff', size: 18 },
+                    showarrow: false
+                }
+            ],
             bgcolor: 'transparent'
         }
     };

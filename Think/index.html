@@ -14,7 +14,12 @@
     <h1>有限體仿射平面 (Affine Plane)</h1>
     <div class="subtitle">視覺化 GF(q) 上的直線方程 y = ax + b</div>
 
-    <div class="field-selection-container">
+    <div class="view-tabs" role="tablist">
+        <button id="tab-2d" class="field-tab active" type="button" aria-selected="true">2D</button>
+        <button id="tab-3d" class="field-tab" type="button" aria-selected="false">3D</button>
+    </div>
+
+    <div class="main-container">
         <label class="selection-title">選擇基底域大小</label>
 
         <div class="selection-rows">
@@ -35,19 +40,6 @@
             </div>
         </div>
 
-        <div id="controls-3d" class="selection-rows controls-3d" style="display: none;">
-            <div class="selection-row axis-selection-row" style="gap: 12px; flex-wrap: wrap;">
-                <label style="color: var(--text-color); font-weight: 600;">3D 軸切片:</label>
-                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                    <span style="color: var(--accent-color);">X:</span>
-                    <select id="axis-x-select" class="num-input"></select>
-                    <span style="color: var(--accent-color);">Y:</span>
-                    <select id="axis-y-select" class="num-input"></select>
-                    <span style="color: var(--accent-color);">Z:</span>
-                    <select id="axis-z-select" class="num-input"></select>
-                </div>
-            </div>
-        </div>
     </div>
 
     <div class="main-container">
@@ -69,14 +61,14 @@
                 <div class="a-slider-label" id="b-slider-val">b = 01</div>
             </div>
 
-            <div class="control-group">
+            <div id="value-select-wrapper" class="value-select-wrapper">
                 <label>選擇顯示數值</label>
-                <div class="slider-container">
+                <div class="value-select-row">
                     <select id="value-select" class="num-input" style="padding: 6px; width: auto; min-width: 100px;">
                         <option value="all">All</option>
                     </select>
+                    <div class="a-slider-label" id="value-select-label"></div>
                 </div>
-                <div class="a-slider-label" id="value-select-label"></div>
             </div>
 
             <div class="equation-display" id="equation-display"
@@ -94,62 +86,109 @@
 
         <div class="bottom-row">
             <div id="view-2d"
-                style="width: 100%; display: flex; flex-direction: row; align-items: stretch; justify-content: center; flex-wrap: wrap; gap: 24px;">
-                <div id="viz-2d" class="visualization"
-                    style="flex: 1; min-width: 350px; display: flex; align-items: center; justify-content: center;">
-                    <svg id="draw-canvas" overflow="visible">
-                    </svg>
+                style="width: 100%; display: flex; flex-direction: column; align-items: stretch; justify-content: center; gap: 24px;">
+                <div class="panel-tabs" role="tablist" aria-label="2D 視圖選擇">
+                    <button id="tab-2d-line" class="panel-tab active" type="button" aria-selected="true">線圖</button>
+                    <button id="tab-2d-latin" class="panel-tab" type="button" aria-selected="false">Latin 方陣</button>
                 </div>
 
-                <div class="visualization latin-square-container"
-                    style="flex: 1; min-width: 350px; justify-content: center; margin: 0; padding-top: 24px; padding-bottom: 24px;">
-                    <div class="latin-square-title"
-                        style="margin-bottom: 12px; font-size: 1.1em; color: var(--primary-color);">拉丁方陣 (2D: c = y -
-                        ax)</div>
-                    <div class="latin-square" id="latin-square">
+                <div id="value-placeholder-2d" class="value-placeholder value-placeholder-2d"></div>
+
+                <div class="panel-content panel-2d-line">
+                    <div id="viz-2d" class="visualization"
+                        style="flex: 1; min-width: 350px; display: flex; align-items: center; justify-content: center;">
+                        <svg id="draw-canvas" overflow="visible">
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="panel-content panel-2d-latin hidden">
+                    <div class="visualization latin-square-container"
+                        style="flex: 1; min-width: 350px; justify-content: center; margin: 0; padding-top: 24px; padding-bottom: 24px;">
+                        <div class="latin-square-title"
+                            style="margin-bottom: 12px; font-size: 1.1em; color: var(--primary-color);">拉丁方陣 (2D: c = y - ax)</div>
+                        <div class="latin-square" id="latin-square">
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div id="view-3d"
-                style="width: 100%; display: none; flex-direction: row; align-items: stretch; justify-content: center; flex-wrap: wrap; gap: 24px;">
-                <div class="visualization"
-                    style="flex: 1; min-width: 350px; height: 500px; position: relative; padding-top: 40px;">
-                    <div class="latin-square-title"
-                        style="position: absolute; top: 15px; left: 0; width: 100%; text-align: center; z-index: 10; font-size: 1.1em; color: var(--primary-color);">
-                        3D 線圖 (Curves)</div>
-                    <div id="viz-3d-lines"
-                        style="width: 100%; height: 100%; cursor: grab; border-radius: 8px; overflow: hidden;"></div>
-                </div>
-
-                <div class="visualization"
-                    style="flex: 1; min-width: 350px; height: 500px; position: relative; padding-top: 40px;">
-                    <div class="latin-square-title"
-                        style="position: absolute; top: 15px; left: 0; width: 100%; text-align: center; z-index: 10; font-size: 1.1em; color: var(--primary-color);">
-                        3D 線圖填色版 (Curves)</div>
-                    <div id="viz-3d-plotly"
-                        style="width: 100%; height: 100%; border-radius: 8px; overflow: hidden; background: transparent;">
+                style="width: 100%; display: none; flex-direction: column; align-items: stretch; justify-content: center; gap: 24px;">
+                <div id="controls-3d" class="selection-rows controls-3d" style="display: none; margin-bottom: 20px; justify-content: center;">
+                    <div class="selection-row axis-selection-row" style="gap: 12px; flex-wrap: nowrap;">
+                        <label style="color: var(--text-color); font-weight: 600;">3D 軸切片:</label>
+                        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: nowrap;">
+                            <span style="color: var(--accent-color);">X:</span>
+                            <select id="axis-x-select" class="num-input"></select>
+                            <span style="color: var(--accent-color);">Y:</span>
+                            <select id="axis-y-select" class="num-input"></select>
+                            <span style="color: var(--accent-color);">Z:</span>
+                            <select id="axis-z-select" class="num-input"></select>
+                        </div>
+                        <div id="value-placeholder-3d" class="value-placeholder value-placeholder-3d"></div>
                     </div>
                 </div>
 
-                <div class="visualization"
-                    style="flex: 1; min-width: 350px; height: 500px; position: relative; padding-top: 40px;">
-                    <div class="latin-square-title"
-                        style="position: absolute; top: 15px; left: 0; width: 100%; text-align: center; z-index: 10; font-size: 1.1em; color: var(--primary-color);">
-                        3D 疊層平面 (Latin Square: z = ax + by + c)</div>
-                    <div class="three-toggle-overlay">
-                        <label>
-                            <input type="checkbox" id="show-number-check">
-                            <span>顯示數字</span>
-                        </label>
+                <div class="panel-tabs" role="tablist" aria-label="3D 視圖選擇">
+                    <button id="tab-3d-lines" class="panel-tab active" type="button" aria-selected="true">線圖</button>
+                    <button id="tab-3d-surface" class="panel-tab" type="button" aria-selected="false">3D線圖填色版</button>
+                    <button id="tab-3d-plotly" class="panel-tab" type="button" aria-selected="false">填色面</button>
+                    <button id="tab-3d-latin" class="panel-tab" type="button" aria-selected="false">疊層平面</button>
+                </div>
+
+                <div class="panel-content panel-3d-lines">
+                    <div class="visualization"
+                        style="flex: 1; min-width: 350px; height: 500px; position: relative; padding-top: 40px;">
+                        <div class="latin-square-title"
+                            style="position: absolute; top: 15px; left: 0; width: 100%; text-align: center; z-index: 10; font-size: 1.1em; color: var(--primary-color);">
+                            3D 線圖 (Curves)</div>
+                        <div id="viz-3d-lines"
+                            style="width: 100%; height: 100%; cursor: grab; border-radius: 8px; overflow: hidden;"></div>
                     </div>
-                    <div id="viz-3d-latin"
-                        style="width: 100%; height: 100%; cursor: grab; border-radius: 8px; overflow: hidden;"></div>
+                </div>
+
+                <div class="panel-content panel-3d-surface hidden">
+                    <div class="visualization"
+                        style="flex: 1; min-width: 350px; height: 500px; position: relative; padding-top: 40px;">
+                        <div class="latin-square-title"
+                            style="position: absolute; top: 15px; left: 0; width: 100%; text-align: center; z-index: 10; font-size: 1.1em; color: var(--primary-color);">
+                            3D 線圖填色版 (Curves)</div>
+                        <div id="viz-3d-surface"
+                            style="width: 100%; height: 100%; cursor: grab; border-radius: 8px; overflow: hidden;"></div>
+                    </div>
+                </div>
+
+                <div class="panel-content panel-3d-plotly hidden">
+                    <div class="visualization"
+                        style="flex: 1; min-width: 350px; height: 500px; position: relative; padding-top: 40px;">
+                        <div class="latin-square-title"
+                            style="position: absolute; top: 15px; left: 0; width: 100%; text-align: center; z-index: 10; font-size: 1.1em; color: var(--primary-color);">
+                            3D 填色面 (Surface)</div>
+                        <div id="viz-3d-plotly"
+                            style="width: 100%; height: 100%; border-radius: 8px; overflow: hidden; background: transparent;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-content panel-3d-latin hidden">
+                    <div class="visualization"
+                        style="flex: 1; min-width: 350px; height: 500px; position: relative; padding-top: 40px;">
+                        <div class="latin-square-title"
+                            style="position: absolute; top: 15px; left: 0; width: 100%; text-align: center; z-index: 10; font-size: 1.1em; color: var(--primary-color);">
+                            3D 疊層平面 (Latin Square: z = ax + by + c)</div>
+                        <div class="three-toggle-overlay">
+                            <label>
+                                <input type="checkbox" id="show-number-check">
+                                <span>顯示數字</span>
+                            </label>
+                        </div>
+                        <div id="viz-3d-latin"
+                            style="width: 100%; height: 100%; cursor: grab; border-radius: 8px; overflow: hidden;"></div>
+                    </div>
                 </div>
             </div>
         </div>
-
-    </div>
 
     <script type="importmap">
         {

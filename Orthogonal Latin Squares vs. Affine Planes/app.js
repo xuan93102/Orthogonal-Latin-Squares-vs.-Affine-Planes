@@ -15,7 +15,7 @@ const mul = (x, y) => mulTable[x][y];
 
 // State variables
 let draggingLayerIndex = null;
-let layerOffsets = [{x: 0, y: 0}, {x: 0, y: 0}, {x: 0, y: 0}];
+let layerOffsets = [{ x: 0, y: 0 }, { x: 0, y: 0 }, { x: 0, y: 0 }];
 let latinSquares = {
     1: [],
     2: [],
@@ -26,12 +26,15 @@ let latinSquares = {
 const affineGrid = document.getElementById('affine-grid');
 const selectSlope = document.getElementById('slope');
 const selectIntercept = document.getElementById('intercept');
+const selectLineStyle = document.getElementById('line-style');
 const eqA = document.getElementById('eq-a');
 const eqB = document.getElementById('eq-b');
 
 const ls1Grid = document.querySelector('#ls-1 .matrix-grid');
 const ls2Grid = document.querySelector('#ls-2 .matrix-grid');
 const ls3Grid = document.querySelector('#ls-3 .matrix-grid');
+const randomizeLatinBtn = document.getElementById('randomize-latin-btn');
+const resetLatinBtn = document.getElementById('reset-latin-btn');
 
 const selectSq1 = document.getElementById('sq1');
 const selectSq2 = document.getElementById('sq2');
@@ -47,6 +50,7 @@ const tuplePopup = document.getElementById('tuple-popup');
 const tupleData = document.getElementById('tuple-data');
 
 const cubeValFilter = document.getElementById('cube-val-filter');
+const themeToggleBtn = document.getElementById('theme-toggle');
 
 // 3D Scene Rotation State
 let isDraggingCube = false;
@@ -56,6 +60,10 @@ let cubeZoom = 1;
 
 // Initialize Application
 function init() {
+    // Theme initialization
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+
     setupGrid();
     generateAllLatinSquares();
     renderAllLatinSquares();
@@ -63,26 +71,37 @@ function init() {
     // Event Listeners
     selectSlope.addEventListener('change', updateAffinePlane);
     selectIntercept.addEventListener('change', updateAffinePlane);
+    selectLineStyle.addEventListener('change', updateAffinePlane);
+    randomizeLatinBtn.addEventListener('click', randomizeLatinSquares);
+    resetLatinBtn.addEventListener('click', resetLatinSquares);
     verifyBtn.addEventListener('click', verifyOrthogonality);
     render3DBtn.addEventListener('click', render3DCube);
     cubeValFilter.addEventListener('change', render3DCube);
     window.addEventListener('resize', updateAffinePlane);
+    
+    // Theme toggle
+    themeToggleBtn.addEventListener('click', () => {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+    });
 
     // Tab Switching Logic
     const tabBtns = document.querySelectorAll('.tab-btn');
     const tabContents = document.querySelectorAll('.tab-content');
-    
+
     tabBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             // Remove active class from all tabs and contents
             tabBtns.forEach(b => b.classList.remove('active'));
             tabContents.forEach(c => c.classList.remove('active'));
-            
+
             // Add active class to clicked tab and corresponding content
             btn.classList.add('active');
             const targetId = btn.getAttribute('data-target');
             document.getElementById(targetId).classList.add('active');
-            
+
             // Trigger resize for SVG line update if Affine Simulator is opened
             if (targetId === 'panel-1') {
                 updateAffinePlane();
@@ -154,7 +173,7 @@ function updateAffinePlane() {
 
     // Clear all points
     document.querySelectorAll('.point-dot').forEach(dot => dot.classList.remove('active'));
-    
+
     const svg = document.getElementById('affine-lines-svg');
     if (svg) svg.innerHTML = ''; // clear previous paths
 
@@ -164,16 +183,14 @@ function updateAffinePlane() {
     slopes.forEach(a => {
         intercepts.forEach(b => {
             const activeLinePoints = [];
-            
+
             // Assign distinct colors based on slope for clearer visualization
             const aIndex = a === 'inf' ? 4 : parseInt(a, 10);
             const hueVariations = [210, 45, 120, 280, 0]; // Blue, Yellow, Green, Purple, Red
             const hue = hueVariations[aIndex];
-            
+
             if (a === 'inf') {
-                // When displaying "all slopes" for a fixed intercept b, we are constructing 
-                // the pencil of lines intersecting at (0, b). Thus, the matching vertical line is x = 0.
-                const targetX = (aVal === 'all' && bVal !== 'all') ? 0 : parseInt(b, 10);
+                const targetX = parseInt(b, 10);
                 for (let y = 0; y < 4; y++) {
                     const pointDiv = document.getElementById(`pt-${targetX}-${y}`);
                     if (pointDiv) {
@@ -193,13 +210,13 @@ function updateAffinePlane() {
                     }
                 }
             }
-            
-            drawAffineCurve(activeLinePoints, true, hue);
+
+            drawAffineCurve(activeLinePoints, true, hue, selectLineStyle.value);
         });
     });
 }
 
-function drawAffineCurve(points, append = false, hue = null) {
+function drawAffineCurve(points, append = false, hue = null, style = '1') {
     const svg = document.getElementById('affine-lines-svg');
     if (!svg) return;
 
@@ -216,26 +233,12 @@ function drawAffineCurve(points, append = false, hue = null) {
         };
     });
 
-    // Create an SVG curve path (smooth cubic bezier)
-    let d = `M ${coords[0].px},${coords[0].py}`;
-    for (let i = 0; i < coords.length - 1; i++) {
-        const curr = coords[i];
-        const next = coords[i + 1];
-
-        // Control points for a smooth curve
-        // We calculate horizontal distance to make the curve look natural
-        const dist = Math.abs(next.px - curr.px);
-        const cp1x = curr.px + dist * 0.5;
-        const cp1y = curr.py;
-        const cp2x = next.px - dist * 0.5;
-        const cp2y = next.py;
-
-        d += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${next.px},${next.py}`;
-    }
+    const pathData = getCurvePath(coords, style);
+    if (!pathData) return;
 
     const pathNS = "http://www.w3.org/2000/svg";
     const path = document.createElementNS(pathNS, "path");
-    path.setAttribute("d", d);
+    path.setAttribute("d", pathData);
     path.setAttribute("class", "affine-curve");
 
     if (hue !== null) {
@@ -244,6 +247,209 @@ function drawAffineCurve(points, append = false, hue = null) {
     }
 
     svg.appendChild(path);
+}
+
+function getCurvePath(coords, style) {
+    switch (style) {
+        case '1':
+            return coords.reduce((d, pt, idx) => idx === 0 ? `M ${pt.px},${pt.py}` : `${d} L ${pt.px},${pt.py}`, '');
+
+        case '2':
+            return coords.reduce((d, pt, idx) => {
+                if (idx === 0) return `M ${pt.px},${pt.py}`;
+                const prev = coords[idx - 1];
+                const cp1x = prev.px + (pt.px - prev.px) * 0.25;
+                const cp1y = prev.py + (pt.py - prev.py) * 0.25 - 16;
+                const cp2x = prev.px + (pt.px - prev.px) * 0.75;
+                const cp2y = prev.py + (pt.py - prev.py) * 0.75 + 16;
+                return `${d} C ${cp1x},${cp1y} ${cp2x},${cp2y} ${pt.px},${pt.py}`;
+            }, '');
+
+        case '3':
+            return coords.reduce((d, pt, idx) => {
+                if (idx === 0) return `M ${pt.px},${pt.py}`;
+                const prev = coords[idx - 1];
+                const cx = (prev.px + pt.px) / 2;
+                const cy = (prev.py + pt.py) / 2 - 18;
+                return `${d} Q ${cx},${cy} ${pt.px},${pt.py}`;
+            }, '');
+
+        case '4':
+            return getCubicSplinePath(coords);
+
+        case '5':
+            return getCatmullRomPath(coords);
+
+        case '6':
+            return getCosineInterpolationPath(coords);
+
+        case '7':
+            return getHermitePath(coords);
+
+        default:
+            return coords.reduce((d, pt, idx) => idx === 0 ? `M ${pt.px},${pt.py}` : `${d} L ${pt.px},${pt.py}`, '');
+    }
+}
+
+function getCubicSplinePath(coords) {
+    if (coords.length < 2) return '';
+    if (coords.length === 2) {
+        return `M ${coords[0].px},${coords[0].py} L ${coords[1].px},${coords[1].py}`;
+    }
+
+    const n = coords.length - 1; 
+    const px = coords.map(c => c.px);
+    const py = coords.map(c => c.py);
+
+    function solveTridiagonal(K) {
+        const p1 = new Array(n);
+        const p2 = new Array(n);
+        
+        const a = new Array(n);
+        const b = new Array(n);
+        const c = new Array(n);
+        const r = new Array(n);
+
+        a[0] = 0;
+        b[0] = 2;
+        c[0] = 1;
+        r[0] = K[0] + 2 * K[1];
+
+        for (let i = 1; i < n - 1; i++) {
+            a[i] = 1;
+            b[i] = 4;
+            c[i] = 1;
+            r[i] = 4 * K[i] + 2 * K[i + 1];
+        }
+
+        a[n - 1] = 2;
+        b[n - 1] = 7;
+        c[n - 1] = 0;
+        r[n - 1] = 8 * K[n - 1] + K[n];
+
+        for (let i = 1; i < n; i++) {
+            const m = a[i] / b[i - 1];
+            b[i] -= m * c[i - 1];
+            r[i] -= m * r[i - 1];
+        }
+
+        p1[n - 1] = r[n - 1] / b[n - 1];
+        for (let i = n - 2; i >= 0; i--) {
+            p1[i] = (r[i] - c[i] * p1[i + 1]) / b[i];
+        }
+
+        for (let i = 0; i < n - 1; i++) {
+            p2[i] = 2 * K[i + 1] - p1[i + 1];
+        }
+        p2[n - 1] = 0.5 * (K[n] + p1[n - 1]);
+
+        return { p1, p2 };
+    }
+
+    const cpX = solveTridiagonal(px);
+    const cpY = solveTridiagonal(py);
+
+    let d = `M ${coords[0].px},${coords[0].py}`;
+    for (let i = 0; i < n; i++) {
+        d += ` C ${cpX.p1[i]},${cpY.p1[i]} ${cpX.p2[i]},${cpY.p2[i]} ${coords[i + 1].px},${coords[i + 1].py}`;
+    }
+    return d;
+}
+
+function getCatmullRomPath(coords) {
+    if (coords.length < 2) return '';
+    let d = `M ${coords[0].px},${coords[0].py}`;
+    for (let i = 0; i < coords.length - 1; i++) {
+        const p0 = coords[i - 1] || coords[i];
+        const p1 = coords[i];
+        const p2 = coords[i + 1];
+        const p3 = coords[i + 2] || coords[i + 1];
+        const cp1x = p1.px + (p2.px - p0.px) / 6;
+        const cp1y = p1.py + (p2.py - p0.py) / 6;
+        const cp2x = p2.px - (p3.px - p1.px) / 6;
+        const cp2y = p2.py - (p3.py - p1.py) / 6;
+        d += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.px},${p2.py}`;
+    }
+    return d;
+}
+
+function getCosineInterpolationPath(coords) {
+    if (coords.length < 2) return '';
+    const samples = 30;
+    let d = `M ${coords[0].px},${coords[0].py}`;
+    for (let i = 0; i < coords.length - 1; i++) {
+        const a = coords[i];
+        const b = coords[i + 1];
+        const dx = b.px - a.px;
+        const dy = b.py - a.py;
+        for (let j = 1; j <= samples; j++) {
+            const t = j / samples;
+            const ease = (1 - Math.cos(t * Math.PI)) / 2;
+            const x = a.px + dx * t;
+            const y = a.py + dy * ease;
+            d += ` L ${x},${y}`;
+        }
+    }
+    return d;
+}
+
+function getHermitePath(coords) {
+    if (coords.length < 2) return '';
+    
+    // Automatically calculate tangents for C1 continuity
+    const tangents = coords.map((pt, i) => {
+        const prev = coords[i - 1];
+        const next = coords[i + 1];
+        
+        if (!prev) {
+            // Start point tangent (forward difference)
+            return {
+                x: next.px - pt.px,
+                y: next.py - pt.py
+            };
+        } else if (!next) {
+            // End point tangent (backward difference)
+            return {
+                x: pt.px - prev.px,
+                y: pt.py - prev.py
+            };
+        } else {
+            // Intermediate points: T_i = (P_{i+1} - P_{i-1}) * 0.5 (Catmull-Rom base)
+            return {
+                x: (next.px - prev.px) * 0.5,
+                y: (next.py - prev.py) * 0.5
+            };
+        }
+    });
+
+    const samples = 30; // Smooth sampling
+    let d = `M ${coords[0].px},${coords[0].py}`;
+    
+    for (let i = 0; i < coords.length - 1; i++) {
+        const p0 = coords[i];
+        const p1 = coords[i + 1];
+        const t0 = tangents[i];
+        const t1 = tangents[i + 1];
+
+        // Evaluate Hermite basis functions for interpolation
+        for (let j = 1; j <= samples; j++) {
+            const t = j / samples;
+            const t2 = t * t;
+            const t3 = t2 * t;
+
+            // Basis functions
+            const h00 = 2 * t3 - 3 * t2 + 1;
+            const h10 = t3 - 2 * t2 + t;
+            const h01 = -2 * t3 + 3 * t2;
+            const h11 = t3 - t2;
+
+            const x = h00 * p0.px + h10 * t0.x + h01 * p1.px + h11 * t1.x;
+            const y = h00 * p0.py + h10 * t0.y + h01 * p1.py + h11 * t1.y;
+
+            d += ` L ${x},${y}`;
+        }
+    }
+    return d;
 }
 
 // Generate Latin Squares
@@ -301,6 +507,52 @@ function renderAllLatinSquares() {
     renderMatrix(ls1Grid, latinSquares[1]);
     renderMatrix(ls2Grid, latinSquares[2]);
     renderMatrix(ls3Grid, latinSquares[3]);
+}
+
+function randomizeLatinSquares() {
+    const baseSlopes = [1, 2, 3];
+    baseSlopes.forEach(slope => {
+        latinSquares[slope] = permuteLatinSquare(generateLatinSquare(slope));
+    });
+    // Ensure no two randomized boards are identical by re-permuting duplicates.
+    for (let i = 0; i < baseSlopes.length; i++) {
+        for (let j = i + 1; j < baseSlopes.length; j++) {
+            while (matrixToKey(latinSquares[baseSlopes[i]]) === matrixToKey(latinSquares[baseSlopes[j]])) {
+                latinSquares[baseSlopes[j]] = permuteLatinSquare(generateLatinSquare(baseSlopes[j]));
+            }
+        }
+    }
+    renderAllLatinSquares();
+}
+
+function resetLatinSquares() {
+    generateAllLatinSquares();
+    renderAllLatinSquares();
+}
+
+function permuteLatinSquare(matrix) {
+    const rowPerm = randomPermutation([0, 1, 2, 3]);
+    const colPerm = randomPermutation([0, 1, 2, 3]);
+    const symbolPerm = randomPermutation([0, 1, 2, 3]);
+
+    return rowPerm.map((rowIndex) => {
+        return colPerm.map((colIndex) => {
+            return symbolPerm[matrix[rowIndex][colIndex]];
+        });
+    });
+}
+
+function randomPermutation(array) {
+    const result = array.slice();
+    for (let i = result.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [result[i], result[j]] = [result[j], result[i]];
+    }
+    return result;
+}
+
+function matrixToKey(matrix) {
+    return matrix.map(row => row.join(',')).join('|');
 }
 
 // Superimposition Verification
@@ -391,7 +643,7 @@ function render3DCube() {
     const targetVal = filterValStr === 'all' ? 'all' : parseInt(filterValStr, 10);
 
     // Reset layer offsets
-    layerOffsets = [{x: 0, y: 0}, {x: 0, y: 0}, {x: 0, y: 0}];
+    layerOffsets = [{ x: 0, y: 0 }, { x: 0, y: 0 }, { x: 0, y: 0 }];
 
     layers.forEach((slope, zIndex) => {
         const matrix = latinSquares[slope];
@@ -428,7 +680,7 @@ function render3DCube() {
                 const hue = [0, 210, 45, 120][val];
                 cell.style.background = `radial-gradient(circle at center, hsla(${hue}, 80%, 20%, 0.95) 0%, hsla(${hue}, 80%, 55%, 0.65) 100%)`;
                 cell.innerText = labels[val];
-                
+
                 // Hide blocks that do not belong to the selected value
                 if (targetVal === 'all' || val === targetVal) {
                     cell.style.opacity = '1';
@@ -477,7 +729,7 @@ function startCubeDrag(e) {
     } else {
         return; // Ignore middle click or other buttons
     }
-    
+
     previousMousePosition = { x: e.offsetX, y: e.offsetY };
 }
 
@@ -490,7 +742,7 @@ function dragCube(e) {
     if (draggingLayerIndex !== null) {
         layerOffsets[draggingLayerIndex].x += deltaMove.x;
         layerOffsets[draggingLayerIndex].y += deltaMove.y;
-        
+
         const targetPlane = cubeScene.children[draggingLayerIndex];
         const initZ = targetPlane.dataset.initZ;
         targetPlane.style.transform = `translate3d(${layerOffsets[draggingLayerIndex].x}px, ${layerOffsets[draggingLayerIndex].y}px, ${initZ}px)`;
@@ -512,10 +764,10 @@ function handleCubeZoom(e) {
         const zoomSpeed = 0.05;
         const zoomDelta = e.deltaY > 0 ? -zoomSpeed : zoomSpeed;
         cubeZoom += zoomDelta;
-        
+
         // Clamp scale to reasonable bounds
         cubeZoom = Math.max(0.3, Math.min(3.0, cubeZoom));
-        
+
         cubeScene.style.transform = `scale(${cubeZoom}) rotateX(${cubeRotation.x}deg) rotateY(${cubeRotation.y}deg)`;
     }
 }

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,13 +8,20 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <div class="bg-shape shape-1"></div>
     <div class="bg-shape shape-2"></div>
-    
+
     <div class="container">
         <header>
-            <h1>GF(2&sup2;) Simulator</h1>
+            <div class="header-top">
+                <h1>GF(2&sup2;) Simulator</h1>
+                <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle Theme">
+                    <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                    <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                </button>
+            </div>
             <p>Orthogonal Latin Squares & Affine Planes Mathematical Engine</p>
         </header>
 
@@ -51,6 +59,18 @@
                             <option value="3">11</option>
                         </select>
                     </div>
+                    <div class="control-group">
+                        <label for="line-style">Line Type:</label>
+                        <select id="line-style">
+                            <option value="1">1 straight line</option>
+                            <option value="2">2 Bezier curve</option>
+                            <option value="3">3 curve</option>
+                            <option value="4">4 Spline Curve</option>
+                            <option value="5">5 Catmull-Rom Spline</option>
+                            <option value="6">6 Cosine Interpolation</option>
+                            <option value="7">7 Hermite Curve</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="equation-display">
                     Line Equation: <span>y = <span id="eq-a">00</span>x + <span id="eq-b">00</span></span>
@@ -65,6 +85,10 @@
             <section id="panel-2" class="panel glass-panel tab-content">
                 <h2>2. Latin Squares Generation</h2>
                 <p>Derived from parallel lines of slope a &isin; {1, 2, 3}</p>
+                <div class="controls">
+                    <button id="randomize-latin-btn" class="primary-btn">Randomize 3 Latin Squares</button>
+                    <button id="reset-latin-btn" class="primary-btn">Restore Default Latin Squares</button>
+                </div>
                 <div class="latin-squares-container">
                     <div class="latin-square-wrapper" id="ls-1">
                         <h3>L&#x2081; (a = 1)</h3>
@@ -85,7 +109,7 @@
             <section id="panel-3" class="panel glass-panel tab-content">
                 <h2>3. Orthogonality Verification</h2>
                 <p>Superimpose two Latin Squares to verify orthogonality.</p>
-                
+
                 <div class="controls">
                     <div class="control-group">
                         <label for="sq1">Square 1:</label>
@@ -121,7 +145,7 @@
                 <p>Visualize the superimposed orthogonal arrays as a 3D structure.</p>
                 <div class="cube-controls controls">
                     <button id="render-3d-btn" class="primary-btn">Render 3D Planes</button>
-                    
+
                     <div class="control-group" style="margin-left: 20px;">
                         <label for="cube-val-filter">Show Blocks:</label>
                         <select id="cube-val-filter">
@@ -134,7 +158,8 @@
                     </div>
 
                     <div class="control-group" style="flex-direction: row; align-items: center; margin-left: auto;">
-                        <span class="drag-hint">Left-click: Drag layers | Right-click: Rotate scene | Scroll: Zoom</span>
+                        <span class="drag-hint">Left-click: Drag layers | Right-click: Rotate scene | Scroll:
+                            Zoom</span>
                     </div>
                 </div>
                 <div class="cube-container hidden" id="cube-wrapper">
@@ -142,7 +167,7 @@
                         <!-- 3D layer planes generated by JS -->
                     </div>
                 </div>
-                
+
                 <!-- Popup to show tuple data on click -->
                 <div id="tuple-popup" class="hidden">
                     <h4>Coordinate (x, y, z)</h4>
@@ -150,7 +175,7 @@
                 </div>
             </section>
         </main>
-        
+
         <footer>
             <p>GF(4) = {0, 1, 2, 3}. Add = XOR, Mul = Lookup Table.</p>
         </footer>
@@ -158,4 +183,5 @@
 
     <script src="app.js"></script>
 </body>
+
 </html>

@@ -10,8 +10,58 @@
     --error-color: #f85149;
     --point-color: rgba(255, 255, 255, 0.2);
     --point-active: #58a6ff;
+    
+    --text-inverse: #fff;
+    --tab-bg: rgba(255, 255, 255, 0.05);
+    --tab-hover-bg: rgba(255, 255, 255, 0.15);
+    --tab-active-bg: rgba(88, 166, 255, 0.2);
+    --tab-active-shadow: rgba(88, 166, 255, 0.3);
+    --select-bg: rgba(0, 0, 0, 0.2);
+    --equation-bg: rgba(0, 0, 0, 0.2);
+    --grid-bg: rgba(0, 0, 0, 0.1);
+    --grid-line: rgba(255, 255, 255, 0.05);
+    --matrix-wrapper-bg: rgba(0, 0, 0, 0.2);
+    --matrix-cell-bg: rgba(255, 255, 255, 0.05);
+    --matrix-cell-hover: rgba(255, 255, 255, 0.1);
+    --layer-plane-bg: rgba(255, 255, 255, 0.02);
+    --layer-plane-border: rgba(255, 255, 255, 0.15);
+    --layer-label-shadow: rgba(0, 0, 0, 0.8);
+    --btn-text: #fff;
+    --btn-shadow: rgba(88, 166, 255, 0.3);
 
     font-family: 'Outfit', sans-serif;
+}
+
+[data-theme="light"] {
+    --bg-color: #f6f8fa;
+    --panel-bg: rgba(255, 255, 255, 0.85);
+    --border-color: rgba(0, 0, 0, 0.1);
+    --text-primary: #24292f;
+    --text-secondary: #57606a;
+    --accent-color: #0969da;
+    --accent-hover: #0550ae;
+    --success-color: #1a7f37;
+    --error-color: #cf222e;
+    --point-color: rgba(0, 0, 0, 0.2);
+    --point-active: #0969da;
+    
+    --text-inverse: #24292f;
+    --tab-bg: rgba(0, 0, 0, 0.03);
+    --tab-hover-bg: rgba(0, 0, 0, 0.08);
+    --tab-active-bg: rgba(9, 105, 218, 0.1);
+    --tab-active-shadow: rgba(9, 105, 218, 0.2);
+    --select-bg: rgba(255, 255, 255, 0.8);
+    --equation-bg: rgba(255, 255, 255, 0.5);
+    --grid-bg: rgba(255, 255, 255, 0.5);
+    --grid-line: rgba(0, 0, 0, 0.05);
+    --matrix-wrapper-bg: rgba(255, 255, 255, 0.6);
+    --matrix-cell-bg: rgba(0, 0, 0, 0.03);
+    --matrix-cell-hover: rgba(0, 0, 0, 0.08);
+    --layer-plane-bg: rgba(255, 255, 255, 0.2);
+    --layer-plane-border: rgba(0, 0, 0, 0.1);
+    --layer-label-shadow: rgba(255, 255, 255, 0.8);
+    --btn-text: #fff;
+    --btn-shadow: rgba(9, 105, 218, 0.3);
 }
 
 * {
@@ -71,17 +121,60 @@ body {
 }
 
 header {
-    text-align: center;
     margin-bottom: 3rem;
+}
+
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
 }
 
 header h1 {
     font-size: 3rem;
     font-weight: 700;
-    background: linear-gradient(135deg, #58a6ff, #a371f7);
+    background: linear-gradient(135deg, var(--accent-color), #a371f7);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0;
+}
+
+.theme-toggle-btn {
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.theme-toggle-btn:hover {
+    transform: scale(1.05);
+    color: var(--accent-color);
+    border-color: var(--accent-color);
+}
+
+[data-theme="light"] .theme-toggle-btn .sun-icon {
+    display: none;
+}
+
+[data-theme="dark"] .theme-toggle-btn .moon-icon {
+    display: none;
+}
+
+[data-theme="light"] .theme-toggle-btn .moon-icon {
+    display: block;
+}
+
+:root:not([data-theme="light"]) .theme-toggle-btn .moon-icon {
+    display: none;
 }
 
 header p {
@@ -106,8 +199,8 @@ main {
 
 .tab-btn {
     padding: 12px 24px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--tab-bg);
+    border: 1px solid var(--border-color);
     border-radius: 8px;
     color: var(--text-secondary);
     cursor: pointer;
@@ -118,15 +211,15 @@ main {
 }
 
 .tab-btn:hover {
-    background: rgba(255, 255, 255, 0.15);
-    color: white;
+    background: var(--tab-hover-bg);
+    color: var(--text-inverse);
 }
 
 .tab-btn.active {
-    background: rgba(88, 166, 255, 0.2);
+    background: var(--tab-active-bg);
     border-color: var(--accent-color);
-    color: white;
-    box-shadow: 0 0 15px rgba(88, 166, 255, 0.3);
+    color: var(--text-inverse);
+    box-shadow: 0 0 15px var(--tab-active-shadow);
 }
 
 .tab-content {
@@ -139,8 +232,15 @@ main {
 }
 
 @keyframes fadeInTab {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .panel {
@@ -159,7 +259,7 @@ main {
 h2 {
     margin-bottom: 0.5rem;
     font-size: 1.5rem;
-    color: #fff;
+    color: var(--text-inverse);
 }
 
 p {
@@ -187,9 +287,9 @@ label {
 }
 
 select {
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--select-bg);
     border: 1px solid var(--border-color);
-    color: #fff;
+    color: var(--text-inverse);
     padding: 0.5rem 1rem;
     border-radius: 8px;
     font-family: inherit;
@@ -208,7 +308,7 @@ select:focus {
     font-size: 1.2rem;
     margin-bottom: 2rem;
     padding: 1rem;
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--equation-bg);
     border-radius: 8px;
     text-align: center;
     font-family: monospace;
@@ -226,7 +326,7 @@ select:focus {
     margin: 0 auto;
     position: relative;
     padding: 20px;
-    background: rgba(0, 0, 0, 0.1);
+    background: var(--grid-bg);
     border-radius: 12px;
     border: 1px solid var(--border-color);
 }
@@ -240,8 +340,8 @@ select:focus {
     left: 20px;
     right: 20px;
     background-image:
-        linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+        linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
     background-size: 33.33% 33.33%;
     z-index: 0;
 }
@@ -320,7 +420,7 @@ select:focus {
 .latin-square-wrapper {
     flex: 1;
     min-width: 200px;
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--matrix-wrapper-bg);
     padding: 1.5rem;
     border-radius: 12px;
     border: 1px solid var(--border-color);
@@ -329,7 +429,7 @@ select:focus {
 .latin-square-wrapper h3 {
     text-align: center;
     margin-bottom: 1rem;
-    color: #fff;
+    color: var(--text-inverse);
 }
 
 .matrix-grid {
@@ -340,7 +440,7 @@ select:focus {
 }
 
 .matrix-cell {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--matrix-cell-bg);
     aspect-ratio: 1;
     display: flex;
     justify-content: center;
@@ -353,14 +453,14 @@ select:focus {
 }
 
 .matrix-cell:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--matrix-cell-hover);
     transform: scale(1.05);
 }
 
 /* Verifier styling */
 .primary-btn {
     background: var(--accent-color);
-    color: #fff;
+    color: var(--btn-text);
     border: none;
     padding: 0.8rem 1.5rem;
     border-radius: 8px;
@@ -375,7 +475,7 @@ select:focus {
 .primary-btn:hover {
     background: var(--accent-hover);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(88, 166, 255, 0.3);
+    box-shadow: 0 4px 12px var(--btn-shadow);
 }
 
 .primary-btn:active {
@@ -496,8 +596,8 @@ footer {
     height: 250px;
     left: 25px;
     top: 25px;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: var(--layer-plane-bg);
+    border: 1px solid var(--layer-plane-border);
     border-radius: 8px;
     padding: 8px;
     display: grid;
@@ -522,9 +622,9 @@ footer {
     font-weight: bold;
     font-family: monospace;
     font-size: 1.2rem;
-    color: white;
+    color: var(--text-inverse);
     cursor: pointer;
-    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5), 0 4px 6px rgba(0, 0, 0, 0.3);
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2), 0 4px 6px rgba(0, 0, 0, 0.2);
     transition: transform 0.2s, filter 0.2s;
     pointer-events: auto;
 }
@@ -538,10 +638,10 @@ footer {
     position: absolute;
     top: -30px;
     left: 0;
-    color: #fff;
+    color: var(--text-inverse);
     font-weight: bold;
     font-size: 1.2rem;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    text-shadow: 0 2px 4px var(--layer-label-shadow);
     pointer-events: none;
 }
 

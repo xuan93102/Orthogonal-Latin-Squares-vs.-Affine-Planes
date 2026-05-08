@@ -140,6 +140,39 @@ header h1 {
     margin-bottom: 0;
 }
 
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.home-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    height: 44px;
+    padding: 0 16px;
+    border-radius: 22px;
+    text-decoration: none;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    white-space: nowrap;
+}
+
+.home-btn:hover {
+    transform: scale(1.05);
+    color: var(--accent-color);
+    border-color: var(--accent-color);
+    box-shadow: 0 4px 16px var(--btn-shadow);
+}
+
 .theme-toggle-btn {
     background: var(--panel-bg);
     border: 1px solid var(--border-color);

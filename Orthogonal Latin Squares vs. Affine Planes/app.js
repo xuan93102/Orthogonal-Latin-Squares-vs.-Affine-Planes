@@ -87,6 +87,13 @@ function init() {
         localStorage.setItem('theme', newTheme);
     });
 
+    // Cross-page theme sync: update this page when another tab/page changes the theme
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'theme' && e.newValue) {
+            document.documentElement.setAttribute('data-theme', e.newValue);
+        }
+    });
+
     // Tab Switching Logic
     const tabBtns = document.querySelectorAll('.tab-btn');
     const tabContents = document.querySelectorAll('.tab-content');

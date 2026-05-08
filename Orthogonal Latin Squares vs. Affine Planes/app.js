@@ -78,7 +78,7 @@ function init() {
     render3DBtn.addEventListener('click', render3DCube);
     cubeValFilter.addEventListener('change', render3DCube);
     window.addEventListener('resize', updateAffinePlane);
-    
+
     // Theme toggle
     themeToggleBtn.addEventListener('click', () => {
         const currentTheme = document.documentElement.getAttribute('data-theme');
@@ -297,14 +297,14 @@ function getCubicSplinePath(coords) {
         return `M ${coords[0].px},${coords[0].py} L ${coords[1].px},${coords[1].py}`;
     }
 
-    const n = coords.length - 1; 
+    const n = coords.length - 1;
     const px = coords.map(c => c.px);
     const py = coords.map(c => c.py);
 
     function solveTridiagonal(K) {
         const p1 = new Array(n);
         const p2 = new Array(n);
-        
+
         const a = new Array(n);
         const b = new Array(n);
         const c = new Array(n);
@@ -395,12 +395,12 @@ function getCosineInterpolationPath(coords) {
 
 function getHermitePath(coords) {
     if (coords.length < 2) return '';
-    
+
     // Automatically calculate tangents for C1 continuity
     const tangents = coords.map((pt, i) => {
         const prev = coords[i - 1];
         const next = coords[i + 1];
-        
+
         if (!prev) {
             // Start point tangent (forward difference)
             return {
@@ -424,7 +424,7 @@ function getHermitePath(coords) {
 
     const samples = 30; // Smooth sampling
     let d = `M ${coords[0].px},${coords[0].py}`;
-    
+
     for (let i = 0; i < coords.length - 1; i++) {
         const p0 = coords[i];
         const p1 = coords[i + 1];

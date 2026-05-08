@@ -10,7 +10,7 @@
     --error-color: #f85149;
     --point-color: rgba(255, 255, 255, 0.2);
     --point-active: #58a6ff;
-    
+
     --text-inverse: #fff;
     --tab-bg: rgba(255, 255, 255, 0.05);
     --tab-hover-bg: rgba(255, 255, 255, 0.15);
@@ -44,7 +44,7 @@
     --error-color: #cf222e;
     --point-color: rgba(0, 0, 0, 0.2);
     --point-active: #0969da;
-    
+
     --text-inverse: #24292f;
     --tab-bg: rgba(0, 0, 0, 0.03);
     --tab-hover-bg: rgba(0, 0, 0, 0.08);

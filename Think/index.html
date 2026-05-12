@@ -11,12 +11,23 @@
 
 <body>
 
+    <div id="theme-icon-overlay" class="theme-icon-overlay" aria-hidden="true"></div>
+
     <h1>有限體仿射平面 (Affine Plane)</h1>
-    <div class="subtitle">視覺化 GF(q) 上的直線方程 y = ax + b</div>
+    <div class="subtitle">視覺化 GF(q) 上的線性式 λ = ax + by（2D）、λ = ax + by + cz（3D）</div>
+
+    <div class="theme-toggle">
+        <label>
+            <input type="checkbox" id="theme-toggle-checkbox">
+            <div class="toggle-slider"></div>
+            <span class="toggle-text">暗色</span>
+        </label>
+    </div>
 
     <div class="view-tabs" role="tablist">
         <button id="tab-2d" class="field-tab active" type="button" aria-selected="true">2D</button>
         <button id="tab-3d" class="field-tab" type="button" aria-selected="false">3D</button>
+        <button id="tab-3d-interactive" class="field-tab" type="button" aria-selected="false">3D互動版</button>
     </div>
 
     <div class="main-container">
@@ -33,9 +44,14 @@
                     <option value="7">7</option>
                     <option value="11">11</option>
                     <option value="13">13</option>
+                    <option value="17">17</option>
+                    <option value="19">19</option>
+                    <option value="23">23</option>
+                    <option value="29">29</option>
+                    <option value="31">31</option>
                 </select>
                 <span class="formula-label">k:</span>
-                <input type="number" id="k-input" min="1" max="4" value="2" class="num-input">
+                <input type="number" id="k-input" min="1" max="5" value="2" class="num-input">
                 <button id="run-k" class="run-btn">RUN</button>
             </div>
         </div>
@@ -46,19 +62,39 @@
 
         <div class="controls">
             <div class="control-group">
-                <label id="a-slider-label-text">選擇斜率 (a 值)</label>
+                <label id="a-slider-label-text">選擇係數 a（x）</label>
                 <div class="slider-container">
-                    <input type="range" id="a-slider" min="-1" max="3" value="1" step="1">
+                    <input type="range" id="a-slider" min="0" max="3" value="1" step="1">
                 </div>
                 <div class="a-slider-label" id="a-slider-val">a = 01</div>
             </div>
 
-            <div class="control-group" id="b-slider-group" style="display: none;">
-                <label>選擇係數 (b 值)</label>
+            <div class="control-group" id="b-slider-group">
+                <label id="b-slider-label-text">選擇係數 b（y）</label>
                 <div class="slider-container">
                     <input type="range" id="b-slider" min="0" max="3" value="1" step="1">
                 </div>
                 <div class="a-slider-label" id="b-slider-val">b = 01</div>
+            </div>
+
+            <div class="control-group" id="c-slider-group" style="display: none;">
+                <label id="c-slider-label-text">選擇係數 c（z）</label>
+                <div class="slider-container">
+                    <input type="range" id="c-slider" min="0" max="3" value="1" step="1">
+                </div>
+                <div class="a-slider-label" id="c-slider-val">c = 01</div>
+            </div>
+
+
+            <div class="control-group" id="label-mode-group">
+                <label>元素表示法</label>
+                <div class="value-select-row">
+                    <select id="label-mode-select" class="num-input"
+                        style="padding: 6px; width: auto; min-width: 150px;">
+                        <option value="algebraic">代數(alpha)</option>
+                        <option value="tuple">編碼(00)</option>
+                    </select>
+                </div>
             </div>
 
             <div id="value-select-wrapper" class="value-select-wrapper">
@@ -73,8 +109,8 @@
 
             <div class="equation-display" id="equation-display"
                 style="flex-direction: column; align-items: flex-start; gap: 8px;">
-                <div id="eq-display-2d">2D: y = 01 · x + c</div>
-                <div id="eq-display-3d">3D: z = 01 · x + 01 · y + c</div>
+                <div id="eq-display-2d">2D: λ = a·x + b·y</div>
+                <div id="eq-display-3d">3D: λ = a·x + b·y + c·z</div>
             </div>
 
             <div class="field-info" id="field-info">
@@ -87,110 +123,172 @@
         <div class="bottom-row">
             <div id="view-2d"
                 style="width: 100%; display: flex; flex-direction: column; align-items: stretch; justify-content: center; gap: 24px;">
-                <div class="panel-tabs" role="tablist" aria-label="2D 視圖選擇">
-                    <button id="tab-2d-line" class="panel-tab active" type="button" aria-selected="true">線圖</button>
-                    <button id="tab-2d-latin" class="panel-tab" type="button" aria-selected="false">Latin 方陣</button>
-                </div>
 
-                <div id="value-placeholder-2d" class="value-placeholder value-placeholder-2d"></div>
-
-                <div class="panel-content panel-2d-line">
-                    <div id="viz-2d" class="visualization"
-                        style="flex: 1; min-width: 350px; display: flex; align-items: center; justify-content: center;">
-                        <svg id="draw-canvas" overflow="visible">
-                        </svg>
-                    </div>
-                </div>
-
-                <div class="panel-content panel-2d-latin hidden">
-                    <div class="visualization latin-square-container"
-                        style="flex: 1; min-width: 350px; justify-content: center; margin: 0; padding-top: 24px; padding-bottom: 24px;">
-                        <div class="latin-square-title"
-                            style="margin-bottom: 12px; font-size: 1.1em; color: var(--primary-color);">拉丁方陣 (2D: c = y - ax)</div>
-                        <div class="latin-square" id="latin-square">
+                <!-- 2D 瀏覽器分頁式面板 -->
+                <div class="browser-tabs-bar" id="browser-2d-tabs-bar">
+                    <div class="browser-tabs-list" id="browser-2d-tabs-list"></div>
+                    <div class="browser-tab-add-wrapper" id="browser-2d-tab-add-wrapper">
+                        <button class="browser-tab-add" id="browser-2d-tab-add" title="新增圖表">＋</button>
+                        <div class="browser-tab-add-menu" id="browser-2d-tab-add-menu">
+                            <div class="browser-2d-tab-add-menu-item" data-panel="line">線圖</div>
+                            <div class="browser-2d-tab-add-menu-item" data-panel="latin">Latin 方陣</div>
                         </div>
                     </div>
+                    <div id="value-placeholder-2d" class="value-placeholder value-placeholder-2d"></div>
+                </div>
+
+                <!-- 2D 橫向並排的圖表容器 -->
+                <div class="browser-panels-row" id="browser-2d-panels-row"></div>
+
+                <!-- Hidden original 2D panels (kept for first-tab rendering target) -->
+                <div style="display:none">
+                    <svg id="draw-canvas" overflow="visible"></svg>
+                    <div id="latin-square"></div>
+                </div>
+            </div>
+
+            <div id="controls-3d" class="selection-rows controls-3d"
+                style="display: none; margin-bottom: 20px; justify-content: center;">
+                <div class="selection-row axis-selection-row" style="gap: 12px; flex-wrap: nowrap;">
+                    <label style="color: var(--text-color); font-weight: 600;">3D 軸切片:</label>
+                    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: nowrap;">
+                        <span style="color: var(--accent-color);">X:</span>
+                        <select id="axis-x-select" class="num-input"></select>
+                        <span style="color: var(--accent-color);">Y:</span>
+                        <select id="axis-y-select" class="num-input"></select>
+                        <span style="color: var(--accent-color);">Z:</span>
+                        <select id="axis-z-select" class="num-input"></select>
+                    </div>
+                    <div id="origin-mode-badge" class="origin-mode-badge"></div>
+                    <div style="display:flex; align-items:center; gap:6px; flex-wrap:nowrap;">
+                        <span style="color:var(--text-color); font-weight:600; font-size:0.92em;">Y軸:</span>
+                        <button class="curve-btn y-axis-dir-btn active" data-origin="asc" title="從下往上 — 0 在下方">
+                            <svg width="16" height="20" viewBox="0 0 16 20" fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                                style="display:inline-block;vertical-align:middle;">
+                                <line x1="8" y1="18" x2="8" y2="4" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" />
+                                <polyline points="3,8 8,2 13,8" stroke="currentColor" stroke-width="2" fill="none"
+                                    stroke-linejoin="round" stroke-linecap="round" />
+                            </svg>
+                        </button>
+                        <button class="curve-btn y-axis-dir-btn" data-origin="desc" title="從上往下 — 0 在上方">
+                            <svg width="16" height="20" viewBox="0 0 16 20" fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                                style="display:inline-block;vertical-align:middle;">
+                                <line x1="8" y1="2" x2="8" y2="16" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" />
+                                <polyline points="3,12 8,18 13,12" stroke="currentColor" stroke-width="2"
+                                    fill="none" stroke-linejoin="round" stroke-linecap="round" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div id="value-placeholder-3d" class="value-placeholder value-placeholder-3d"></div>
                 </div>
             </div>
 
             <div id="view-3d"
                 style="width: 100%; display: none; flex-direction: column; align-items: stretch; justify-content: center; gap: 24px;">
-                <div id="controls-3d" class="selection-rows controls-3d" style="display: none; margin-bottom: 20px; justify-content: center;">
-                    <div class="selection-row axis-selection-row" style="gap: 12px; flex-wrap: nowrap;">
-                        <label style="color: var(--text-color); font-weight: 600;">3D 軸切片:</label>
-                        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: nowrap;">
-                            <span style="color: var(--accent-color);">X:</span>
-                            <select id="axis-x-select" class="num-input"></select>
-                            <span style="color: var(--accent-color);">Y:</span>
-                            <select id="axis-y-select" class="num-input"></select>
-                            <span style="color: var(--accent-color);">Z:</span>
-                            <select id="axis-z-select" class="num-input"></select>
-                        </div>
-                        <div id="value-placeholder-3d" class="value-placeholder value-placeholder-3d"></div>
+                <!-- 瀏覽器分頁式 3D 面板 -->
+                <div class="browser-tabs-bar" id="browser-tabs-bar">
+                    <div class="browser-tabs-list" id="browser-tabs-list">
+                        <!-- tabs injected by JS -->
                     </div>
-                </div>
-
-                <div class="panel-tabs" role="tablist" aria-label="3D 視圖選擇">
-                    <button id="tab-3d-lines" class="panel-tab active" type="button" aria-selected="true">線圖</button>
-                    <button id="tab-3d-surface" class="panel-tab" type="button" aria-selected="false">3D線圖填色版</button>
-                    <button id="tab-3d-plotly" class="panel-tab" type="button" aria-selected="false">填色面</button>
-                    <button id="tab-3d-latin" class="panel-tab" type="button" aria-selected="false">疊層平面</button>
-                </div>
-
-                <div class="panel-content panel-3d-lines">
-                    <div class="visualization"
-                        style="flex: 1; min-width: 350px; height: 500px; position: relative; padding-top: 40px;">
-                        <div class="latin-square-title"
-                            style="position: absolute; top: 15px; left: 0; width: 100%; text-align: center; z-index: 10; font-size: 1.1em; color: var(--primary-color);">
-                            3D 線圖 (Curves)</div>
-                        <div id="viz-3d-lines"
-                            style="width: 100%; height: 100%; cursor: grab; border-radius: 8px; overflow: hidden;"></div>
-                    </div>
-                </div>
-
-                <div class="panel-content panel-3d-surface hidden">
-                    <div class="visualization"
-                        style="flex: 1; min-width: 350px; height: 500px; position: relative; padding-top: 40px;">
-                        <div class="latin-square-title"
-                            style="position: absolute; top: 15px; left: 0; width: 100%; text-align: center; z-index: 10; font-size: 1.1em; color: var(--primary-color);">
-                            3D 線圖填色版 (Curves)</div>
-                        <div id="viz-3d-surface"
-                            style="width: 100%; height: 100%; cursor: grab; border-radius: 8px; overflow: hidden;"></div>
-                    </div>
-                </div>
-
-                <div class="panel-content panel-3d-plotly hidden">
-                    <div class="visualization"
-                        style="flex: 1; min-width: 350px; height: 500px; position: relative; padding-top: 40px;">
-                        <div class="latin-square-title"
-                            style="position: absolute; top: 15px; left: 0; width: 100%; text-align: center; z-index: 10; font-size: 1.1em; color: var(--primary-color);">
-                            3D 填色面 (Surface)</div>
-                        <div id="viz-3d-plotly"
-                            style="width: 100%; height: 100%; border-radius: 8px; overflow: hidden; background: transparent;">
+                    <div class="browser-tab-add-wrapper">
+                        <button class="browser-tab-add" id="browser-tab-add" title="新增圖表">＋</button>
+                        <div class="browser-tab-add-menu" id="browser-tab-add-menu">
+                            <div class="browser-tab-add-menu-item" data-panel="lines">線圖</div>
+                            <div class="browser-tab-add-menu-item" data-panel="surface">3D線圖填色版</div>
+                            <div class="browser-tab-add-menu-item" data-panel="plotly">填色面</div>
+                            <div class="browser-tab-add-menu-item" data-panel="latin">疊層平面</div>
                         </div>
                     </div>
+                    <!-- 同步開關（移至最右） -->
+                    <label class="sync-toggle-label sync-toggle-label--right" title="同步所有圖的視角旋轉">
+                        <input type="checkbox" id="sync-cameras-check">
+                        <span class="sync-toggle-icon">⇄</span>
+                        <span class="sync-toggle-text">同步視角</span>
+                    </label>
                 </div>
 
-                <div class="panel-content panel-3d-latin hidden">
-                    <div class="visualization"
-                        style="flex: 1; min-width: 350px; height: 500px; position: relative; padding-top: 40px;">
-                        <div class="latin-square-title"
-                            style="position: absolute; top: 15px; left: 0; width: 100%; text-align: center; z-index: 10; font-size: 1.1em; color: var(--primary-color);">
-                            3D 疊層平面 (Latin Square: z = ax + by + c)</div>
-                        <div class="three-toggle-overlay">
-                            <label>
-                                <input type="checkbox" id="show-number-check">
-                                <span>顯示數字</span>
-                            </label>
-                        </div>
-                        <div id="viz-3d-latin"
-                            style="width: 100%; height: 100%; cursor: grab; border-radius: 8px; overflow: hidden;"></div>
+                <!-- 橫向並排的圖表容器 -->
+                <div class="browser-panels-row" id="browser-panels-row">
+                    <!-- panels injected by JS -->
+                </div>
+
+                <!-- Hidden show-number checkbox (kept for compat) -->
+                <div style="display:none">
+                    <input type="checkbox" id="show-number-check">
+                </div>
+
+                <!-- Hidden original viz containers so JS can init Three.js -->
+                <div id="viz-3d-lines"
+                    style="display:none; width:1px; height:1px; position:absolute; pointer-events:none;"></div>
+                <div id="viz-3d-surface"
+                    style="display:none; width:1px; height:1px; position:absolute; pointer-events:none;"></div>
+                <div id="viz-3d-latin"
+                    style="display:none; width:1px; height:1px; position:absolute; pointer-events:none;"></div>
+                <div id="viz-3d-plotly"
+                    style="display:none; width:1px; height:1px; position:absolute; pointer-events:none;"></div>
+            </div>
+
+            <div id="view-3d-interactive"
+                style="width: 100%; display: none; flex-direction: column; align-items: stretch; justify-content: center; gap: 24px;">
+                <div class="browser-panel-item browser-3d-panel-item browser-panel-lines-planes" style="width:100%; max-width:700px; margin:0 auto; flex: 1; border: 1px solid var(--border-color); border-radius: 10px; position: relative;">
+                    <div class="browser-panel-title">3D 線圖＋疊層平面</div>
+                    <div class="browser-panel-inner" id="view-3d-interactive-inner" style="width:100%; height:100%; min-height:340px;"></div>
+                    <!-- 左上角：線/面 模式切換 -->
+                    <div class="panel-display-mode-overlay" id="interactive-display-mode-overlay">
+                        <div class="panel-display-mode-title" title="顯示模式">▤</div>
+                        <button class="panel-display-mode-btn" data-mode="planes" id="interactive-mode-btn-planes">
+                            <span class="display-mode-icon">
+                                <svg viewBox="0 0 40 24" width="34" height="20">
+                                    <rect x="2" y="4" width="36" height="5" rx="1" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.9"/>
+                                    <rect x="2" y="11" width="36" height="5" rx="1" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.7"/>
+                                    <rect x="2" y="18" width="36" height="5" rx="1" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.5"/>
+                                </svg>
+                            </span>面
+                        </button>
+                        <button class="panel-display-mode-btn active" data-mode="lines" id="interactive-mode-btn-lines">
+                            <span class="display-mode-icon">
+                                <svg viewBox="0 0 40 24" width="34" height="20">
+                                    <polyline points="2,20 12,8 22,16 32,4 38,10" stroke="currentColor" stroke-width="2" fill="none"/>
+                                    <circle cx="2" cy="20" r="2" fill="currentColor"/>
+                                    <circle cx="12" cy="8" r="2" fill="currentColor"/>
+                                    <circle cx="22" cy="16" r="2" fill="currentColor"/>
+                                    <circle cx="32" cy="4" r="2" fill="currentColor"/>
+                                    <circle cx="38" cy="10" r="2" fill="currentColor"/>
+                                </svg>
+                            </span>線
+                        </button>
+                    </div>
+                    <!-- 右上角：曲線種類選擇 -->
+                    <div class="panel-curve-style-overlay">
+                        <div class="panel-curve-style-title" title="線條畫法">≡</div>
+                        <button class="panel-curve-btn active" data-style="bezier">
+                            <span class="curve-icon"><svg viewBox="0 0 40 20" width="34" height="17"><path d="M2,18 C10,18 14,2 20,2 C26,2 30,18 38,18" stroke="currentColor" stroke-width="2" fill="none"/></svg></span>Bézier
+                        </button>
+                        <button class="panel-curve-btn" data-style="smoothstep">
+                            <span class="curve-icon"><svg viewBox="0 0 40 20" width="34" height="17"><path d="M2,18 C12,18 16,2 38,2" stroke="currentColor" stroke-width="2" fill="none"/></svg></span>Smoothstep
+                        </button>
+                        <button class="panel-curve-btn" data-style="catmull">
+                            <span class="curve-icon"><svg viewBox="0 0 40 20" width="34" height="17"><path d="M2,14 C8,18 12,2 20,10 C28,18 32,2 38,6" stroke="currentColor" stroke-width="2" fill="none"/></svg></span>Catmull-Rom
+                        </button>
+                        <button class="panel-curve-btn" data-style="arc">
+                            <span class="curve-icon"><svg viewBox="0 0 40 20" width="34" height="17"><path d="M2,18 A18 18 0 0 1 20,2 A18 18 0 0 1 38,18" stroke="currentColor" stroke-width="2" fill="none"/></svg></span>弧線
+                        </button>
+                        <button class="panel-curve-btn" data-style="step">
+                            <span class="curve-icon"><svg viewBox="0 0 40 20" width="34" height="17"><polyline points="2,18 14,18 14,8 26,8 26,2 38,2" stroke="currentColor" stroke-width="2" fill="none"/></svg></span>階梯
+                        </button>
+                        <button class="panel-curve-btn" data-style="straight">
+                            <span class="curve-icon"><svg viewBox="0 0 40 20" width="34" height="17"><polyline points="2,18 14,2 26,14 38,6" stroke="currentColor" stroke-width="2" fill="none"/></svg></span>直線
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
 
-    <script type="importmap">
+        <script type="importmap">
         {
             "imports": {
                 "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
@@ -198,7 +296,30 @@
             }
         }
     </script>
-    <script src="main.js"></script>
+        <script src="main.js"></script>
+
+    <!-- 平面详情模态框 -->
+    <div id="plane-modal" class="plane-modal" style="display: none;">
+        <div class="plane-modal-content">
+            <button class="plane-modal-close" id="plane-modal-close">✕</button>
+            <div class="plane-modal-inner">
+                <div class="plane-modal-title" id="plane-modal-title">平面信息</div>
+                <div id="plane-modal-equation" class="plane-modal-equation"></div>
+                
+                <div class="plane-modal-grid">
+                    <div class="plane-modal-latin">
+                        <div class="plane-modal-subtitle">Latin Square</div>
+                        <div id="plane-modal-latin-square"></div>
+                    </div>
+                    <div class="plane-modal-curve">
+                        <div class="plane-modal-subtitle">曲線</div>
+                        <div class="plane-modal-curve-style-row" id="plane-modal-curve-style-row"></div>
+                        <svg id="plane-modal-curve-svg" overflow="visible" width="400" height="400"></svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>
